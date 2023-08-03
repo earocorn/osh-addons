@@ -1,15 +1,34 @@
 description = 'ONVIF Video Camera'
 ext.details = 'Driver for IP video cameras using the ONFIV standard'
-version = '0.0.1'
+version = '0.0.2'
 
 dependencies {
   implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
   implementation project(':sensorhub-driver-rtpcam')
-  embeddedImpl 'org.apache.cxf.services.ws-discovery:cxf-services-ws-discovery-api:3.1.11'
-  embeddedImpl 'org.apache.cxf.services.ws-discovery:cxf-services-ws-discovery-service:3.1.11'
-  embeddedImpl 'org.apache.cxf:cxf-rt-transports-http-jetty:3.1.11'
-  embeddedImpl 'org.apache.cxf:cxf-rt-bindings-soap:3.1.11'
-  embeddedImpl 'javax.xml.soap:javax.xml.soap-api:1.3.8'
+
+  //apache implementations help launch the project modules. do not update to newer versions... it will not launch properly
+  embeddedImpl 'org.apache.cxf.services.ws-discovery:cxf-services-ws-discovery-api:3.1.11' //api for working with WS-discovery in apache cxf
+  embeddedImpl 'org.apache.cxf.services.ws-discovery:cxf-services-ws-discovery-service:3.1.11' //implementation of the ws-discovery service in apache cxf
+  embeddedImpl 'org.apache.cxf:cxf-rt-transports-http-jetty:3.1.11' //jetty based http transport implementation for apache cxf, transport implementation handles the communication between clients and services using HTTP.
+  embeddedImpl 'org.apache.cxf:cxf-rt-bindings-soap:3.1.11' //provides soap binding support for apache cxf
+
+  embeddedImpl 'javax.xml.soap:javax.xml.soap-api:1.4.0'  //updated from v: 1.3.8
+  embeddedImpl 'javax.xml.bind:jaxb-api:2.2.11'  // api for JAXB, contains interfaces and classes
+
+  embeddedImpl'com.sun.xml.bind:jaxb-impl:2.2.11'
+  embeddedImpl 'com.sun.xml.bind:jaxb-core:2.2.11'
+  embeddedImpl 'com.sun.xml.messaging.saaj:saaj-impl:1.4.0' //create,send and receives soap messages
+  embeddedImpl 'com.sun.activation:javax.activation:1.2.0' //javabeans activation framework, working with mime types and data conversion,used in conj with saaj to handle attachments in soap msgs
+
+
+  //embeddedImpl 'org.glassfish.jaxb:jaxb-runtime:2.3.1'  //jaxb runtime, bind xml schema to java classes, marshal/unmarshal xml data
+
+  //implementation'org.jvnet.mimepull:mimepull:1.10.0'
+  //implementation'org.glassfish:javax.xml.soap:10.0-b28'
+
+
+
+
   embeddedImpl('net.sf.jipcam:jipcam:0.9.1') {
     exclude group: 'javax.servlet', module: 'servlet-api'
     exclude group: 'commons-cli', module: 'commons-cli'
@@ -39,9 +58,9 @@ ext.pom >>= {
   developers {
     developer {
       id 'theastrowolfe'
-      name 'Joshua Wolfe'
+      name 'JoshuaWolfe'
       organization 'Botts Innovative Research, Inc.'
-      organizationUrl 'http://www.botts-inc.com' 
+      organizationUrl 'http://www.botts-inc.com'
     }
   }
 }

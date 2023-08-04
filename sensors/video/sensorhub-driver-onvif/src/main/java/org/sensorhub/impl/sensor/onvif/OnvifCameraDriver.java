@@ -1,17 +1,17 @@
 /***************************** BEGIN LICENSE BLOCK ***************************
 
- The contents of this file are subject to the Mozilla Public License, v. 2.0.
- If a copy of the MPL was not distributed with this file, You can obtain one
- at http://mozilla.org/MPL/2.0/.
+The contents of this file are subject to the Mozilla Public License, v. 2.0.
+If a copy of the MPL was not distributed with this file, You can obtain one
+at http://mozilla.org/MPL/2.0/.
 
- Software distributed under the License is distributed on an "AS IS" basis,
- WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- for the specific language governing rights and limitations under the License.
-
- The Initial Developer is Bott's Innovative Research Inc. Portions created by the Initial
- Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
-
- ******************************* END LICENSE BLOCK ***************************/
+Software distributed under the License is distributed on an "AS IS" basis,
+WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+for the specific language governing rights and limitations under the License.
+ 
+The Initial Developer is Bott's Innovative Research Inc. Portions created by the Initial
+Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
+ 
+******************************* END LICENSE BLOCK ***************************/
 
 package org.sensorhub.impl.sensor.onvif;
 
@@ -37,7 +37,7 @@ import java.util.Optional;
  * Implementation of sensor interface for generic Cameras using IP
  * protocol
  * </p>
- *
+ * 
  * @author Joshua Wolfe <developer.wolfe@gmail.com>
  * @since June 13, 2017
  */
@@ -50,7 +50,7 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
     OnvifVideoOutput mpeg4VideoOutput;
     OnvifVideoOutput mjpegVideoOutput;
 
-    //    OnvifVideoControl videoControlInterface;
+//    OnvifVideoControl videoControlInterface;
     OnvifPtzOutput ptzPosOutput;
     OnvifPtzControl ptzControlInterface;
     String hostIp;
@@ -69,7 +69,7 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
     String longName;
     OnvifRTSPConfig onvifRTSPConfig;
     OnvifBasicVideoConfig onvifBasicVideoConfig;
-    // BasicVideoConfig basicVideoConfig;
+   // BasicVideoConfig basicVideoConfig;
     //RTSPConfig rtspConfig;
     URI streamUri;
     Profile mjpegProfile;
@@ -151,15 +151,15 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
         generateXmlID("ONVIF_CAM_", serialNumber);
 
 
-        //list any profiles the camera may have
-        List<Profile> profiles = camera.getDevices().getProfiles();
-        logger.info("List of profiles: " + profiles);
-        if (profiles == null || profiles.isEmpty()) {
-            throw new SensorHubException("Camera does not have any profiles to use");
-        }
+            //list any profiles the camera may have
+            List<Profile> profiles = camera.getDevices().getProfiles();
+            logger.info("List of profiles: " + profiles);
+            if (profiles == null || profiles.isEmpty()) {
+                throw new SensorHubException("Camera does not have any profiles to use");
+            }
 
-        //ks
-        //Media profile for video stream
+            //ks
+            //Media profile for video stream
         for (Profile mediaProfile :profiles){
             logger.info("Profile Name: "+ mediaProfile.getName());
             VideoEncoderConfiguration videoEncoderConfiguration = mediaProfile.getVideoEncoderConfiguration();
@@ -321,19 +321,19 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
 //                    }
 //                }
             }*/
-        //ptz profiles
-        for (Profile p : profiles) {
-            String token = p.getToken();
-            if (camera.getPtz().isAbsoluteMoveSupported(token) &&
-                    camera.getPtz().isRelativeMoveSupported(token) &&
-                    camera.getPtz().isPtzOperationsSupported(token)) {
-                profile = p;
-                break;
+            //ptz profiles
+            for (Profile p : profiles) {
+                String token = p.getToken();
+                if (camera.getPtz().isAbsoluteMoveSupported(token) &&
+                        camera.getPtz().isRelativeMoveSupported(token) &&
+                        camera.getPtz().isPtzOperationsSupported(token)) {
+                    profile = p;
+                    break;
+                }
             }
-        }
-        if (profile == null) {
-            throw new SensorHubException("Camera does not have any profiles capable of PTZ for "+ hostIp);
-        }
+            if (profile == null) {
+                throw new SensorHubException("Camera does not have any profiles capable of PTZ for "+ hostIp);
+            }
 
         //get media profile
         //media = camera.getMedia();
@@ -349,7 +349,7 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
                 throw new SensorException("Cannot connect to MPEG4 stream - MPEG4 not supported");
             }
         }
-        //    logger.info("Get bounds: "+ String.valueOf(profile.getVideoSourceConfiguration().getBounds().getWidth()+ " x "+ String.valueOf(profile.getVideoSourceConfiguration().getBounds().getHeight())));
+    //    logger.info("Get bounds: "+ String.valueOf(profile.getVideoSourceConfiguration().getBounds().getWidth()+ " x "+ String.valueOf(profile.getVideoSourceConfiguration().getBounds().getHeight())));
 //        logger.info("Get resolution: "+ String.valueOf(profile.getVideoEncoderConfiguration().getResolution().getWidth()+ " x "+String.valueOf(profile.getVideoEncoderConfiguration().getResolution().getHeight())));
 
         // create I/O objects
@@ -494,12 +494,12 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
     //start the video and ptz output
     @Override
     protected void doStart() throws SensorHubException {
-        // Validate connection to camera
-        if (camera == null)
-            throw new SensorHubException("Exception occurred when connecting to camera");
+		// Validate connection to camera
+		if (camera == null)
+			throw new SensorHubException("Exception occurred when connecting to camera");
 
-        // start video output for Mjpeg
-        if (mpeg4VideoOutput != null) {
+		// start video output for Mjpeg
+		if (mpeg4VideoOutput != null) {
             mpeg4VideoOutput.start();
             logger.info("Video output for mpeg4 stream is starting");
         }
@@ -513,11 +513,11 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
             mjpegVideoOutput.start();
             logger.info("Video output for mjpeg stream is starting");
         }
-        // start PTZ output
-        if (ptzPosOutput != null && ptzControlInterface != null) {
-            ptzPosOutput.start();
-            ptzControlInterface.start();
-        }
+		// start PTZ output
+		if (ptzPosOutput != null && ptzControlInterface != null) {
+			ptzPosOutput.start();
+			ptzControlInterface.start();
+		}
 
         /*
         if (h264VideoOutput !=null){

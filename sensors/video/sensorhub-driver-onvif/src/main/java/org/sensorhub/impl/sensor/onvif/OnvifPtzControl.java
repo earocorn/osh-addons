@@ -15,21 +15,12 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.onvif;
 
-import java.net.URL;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import de.onvif.soap.OnvifDevice;
+import de.onvif.soap.exception.SOAPFaultException;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataChoice;
 import net.opengis.swe.v20.DataComponent;
-
-import org.onvif.ver10.schema.FloatRange;
-import org.onvif.ver10.schema.PTZPreset;
-import org.onvif.ver10.schema.PTZVector;
-import org.onvif.ver10.schema.Profile;
-import org.onvif.ver10.schema.Vector1D;
-import org.onvif.ver10.schema.Vector2D;
+import org.onvif.ver10.schema.*;
 import org.sensorhub.api.command.CommandException;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
@@ -38,7 +29,11 @@ import org.sensorhub.impl.sensor.videocam.ptz.PtzPreset;
 import org.sensorhub.impl.sensor.videocam.ptz.PtzPresetsHandler;
 import org.vast.data.DataChoiceImpl;
 
-import de.onvif.soap.OnvifDevice;
+import java.net.URL;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -167,10 +162,10 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
         		float rzoom = data.getFloatValue();
         		camera.getPtz().relativeMove(profile.getToken(), 0, 0, rzoom);
         	}
+
         	else if (itemID.equals(VideoCamHelper.TASKING_PTZPRESET))
         	{
         	    PtzPreset preset = presetsHandler.getPreset(data.getStringValue());
-
         	    camera.getPtz().gotoPreset(presetsMap.get(preset), profile.getToken());
         	}
         	else if (itemID.equalsIgnoreCase(VideoCamHelper.TASKING_PTZ_POS))
@@ -185,9 +180,11 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
 	    catch (Exception e)
 	    {	    	
 	        throw new CommandException("Error sending PTZ command via ONVIF", e);
-	    }        
-       
-        return true;
+	    } catch (SOAPFaultException e) {
+			throw new RuntimeException(e);
+		}
+
+		return true;
     }
     
     @Override
@@ -196,11 +193,7 @@ public class OnvifPtzControl extends AbstractSensorControl<OnvifCameraDriver>
         return commandData;
     }
 
-    protected void start()
-    {
-    }
+    protected void start() {}
 
-	public void stop()
-	{
-	}
+	public void stop() {}
 }

@@ -15,29 +15,28 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.test.impl.sensor.onvif;
 
-import java.util.Map;
-import java.util.UUID;
-
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.sensorhub.api.event.Event;
-import org.sensorhub.api.event.IEventListener;
-import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.command.CommandData;
 import org.sensorhub.api.command.IStreamingControlInterface;
 import org.sensorhub.api.data.DataEvent;
+import org.sensorhub.api.data.IStreamingDataInterface;
+import org.sensorhub.api.event.Event;
+import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.impl.sensor.onvif.OnvifCameraConfig;
 import org.sensorhub.impl.sensor.onvif.OnvifCameraDriver;
 import org.vast.data.DataChoiceImpl;
 import org.vast.sensorML.SMLUtils;
 import org.vast.swe.SWEUtils;
 
-import static org.junit.Assert.*;
+import java.util.Map;
+import java.util.UUID;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * <p>
@@ -61,9 +60,9 @@ public class TestOnvifCameraDriver implements IEventListener
     {
         config = new OnvifCameraConfig();
         config.id = UUID.randomUUID().toString();
-        config.hostIp = "192.168.0.28";
+        config.hostIp = "10.4.169.128";
         config.user = "admin";
-        config.password = "op3nsaysam3";
+        config.password = "admin";
         
         driver = new OnvifCameraDriver();
         driver.setConfiguration(config);

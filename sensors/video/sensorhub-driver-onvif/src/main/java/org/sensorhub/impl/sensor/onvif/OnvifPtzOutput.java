@@ -15,11 +15,7 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.onvif;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.TimeZone;
-import java.util.Timer;
-import java.util.TimerTask;
+import de.onvif.soap.OnvifDevice;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.TextEncoding;
@@ -31,7 +27,11 @@ import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 import org.vast.data.SWEFactory;
 
-import de.onvif.soap.OnvifDevice;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.TimeZone;
+import java.util.Timer;
+import java.util.TimerTask;
 
 
 /**

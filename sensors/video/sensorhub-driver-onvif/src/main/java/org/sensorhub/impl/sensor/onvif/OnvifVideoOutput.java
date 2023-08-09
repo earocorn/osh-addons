@@ -27,35 +27,23 @@ import java.net.URL;
 public class OnvifVideoOutput extends AbstractSensorOutput <OnvifCameraDriver> {
     DataComponent videoDataStruct;
     DataEncoding videoEncoding;
-    boolean reconnect;
     boolean streaming;
-
-    URL getImgSizeUrl;
+    URL url;
 
     public OnvifVideoOutput(OnvifCameraDriver driver, String name) {
         super(name, driver);
-
-        /*
-        try {
-            getImgSizeUrl = new URL(parentSensor.getHostUrl() + driver.VAPIX_QUERY_IMAGE_SIZE);
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
-        */
     }
-
 
     protected void init() throws SensorException {
         try {
             // get image size from camera HTTP interface
-            // int[] imgSize = getImageSize();
+           // int[] imgSize = getImageSize();
             //VideoCamHelper fac = new VideoCamHelper();
 
             // build output structure
             //DataStream videoStream = fac.newVideoOutputMJPEG(getName(), imgSize[0], imgSize[1]);
             //videoDataStruct = videoStream.getElementType();
             // videoEncoding = videoStream.getEncoding();
-
 
         } catch (Exception e) {
             throw new SensorException("Error while initializing video output ", e);
@@ -83,8 +71,13 @@ public class OnvifVideoOutput extends AbstractSensorOutput <OnvifCameraDriver> {
 //    }
 
 
+
+    //RTSP port is usually 554, the HTTP/ONVIF port is 80 or 8080
+    //http://[IP address]:port/onvif/device_service.
+
     protected void start() {
         try {
+
             final URL videoUrl = new URL(parentSensor.getHostUrl().replace("axis-cgi", "mjpg/video.mjpg"));
 
             Thread t = new Thread(new Runnable() {
@@ -137,6 +130,7 @@ public class OnvifVideoOutput extends AbstractSensorOutput <OnvifCameraDriver> {
 
                             latestRecord = dataBlock;
                             latestRecordTime = System.currentTimeMillis();
+                            //TODO: SensorDataEvent
                             //eventHandler.publish(new SensorDataEvent(latestRecordTime, OnvifVideoOutput.this, latestRecord));
                         }
 
@@ -156,25 +150,14 @@ public class OnvifVideoOutput extends AbstractSensorOutput <OnvifCameraDriver> {
 
 
     @Override
-    public double getAverageSamplingPeriod() {
-        return 1 / 30.;
-    }
-
+    public double getAverageSamplingPeriod() {return 1 / 30.;}
 
     @Override
-    public DataComponent getRecordDescription() {
-        return videoDataStruct;
-    }
-
+    public DataComponent getRecordDescription() {return videoDataStruct;}
 
     @Override
-    public DataEncoding getRecommendedEncoding() {
-        return videoEncoding;
-    }
+    public DataEncoding getRecommendedEncoding() {return videoEncoding;}
 
-
-    public void stop() {
-
-    }
+    public void stop() {}
 
 }

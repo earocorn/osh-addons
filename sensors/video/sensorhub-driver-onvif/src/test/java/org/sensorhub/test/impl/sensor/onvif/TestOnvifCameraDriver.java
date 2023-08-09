@@ -60,9 +60,9 @@ public class TestOnvifCameraDriver implements IEventListener
     {
         config = new OnvifCameraConfig();
         config.id = UUID.randomUUID().toString();
-        config.hostIp = "10.4.169.128";
-        config.user = "admin";
-        config.password = "admin";
+        config.hostIp = "192.168.1.184";
+        config.user = "test";
+        config.password = "oshtest";
         
         driver = new OnvifCameraDriver();
         driver.setConfiguration(config);

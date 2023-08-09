@@ -21,14 +21,6 @@ dependencies {
   embeddedImpl 'com.sun.activation:javax.activation:1.2.0' //javabeans activation framework, working with mime types and data conversion,used in conj with saaj to handle attachments in soap msgs
 
 
-  //embeddedImpl 'org.glassfish.jaxb:jaxb-runtime:2.3.1'  //jaxb runtime, bind xml schema to java classes, marshal/unmarshal xml data
-
-  //implementation'org.jvnet.mimepull:mimepull:1.10.0'
-  //implementation'org.glassfish:javax.xml.soap:10.0-b28'
-
-
-
-
   embeddedImpl('net.sf.jipcam:jipcam:0.9.1') {
     exclude group: 'javax.servlet', module: 'servlet-api'
     exclude group: 'commons-cli', module: 'commons-cli'

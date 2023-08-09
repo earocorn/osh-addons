@@ -48,19 +48,19 @@ import org.vast.data.DataBlockMixed;
  */
 public class RTPVideoOutput<SensorType extends ISensorModule<?>> extends AbstractSensorOutput<SensorType> implements RTPH264Callback
 {
-    BasicVideoConfig videoConfig;
-    RTSPConfig rtspConfig;
+    protected BasicVideoConfig videoConfig;
+    protected RTSPConfig rtspConfig;
     
-    DataComponent dataStruct;
-    DataEncoding dataEncoding;
-    RTSPClient rtspClient;
-    RTPH264Receiver rtpThread;
-    RTCPSender rtcpThread;
+    protected DataComponent dataStruct;
+    protected DataEncoding dataEncoding;
+    protected RTSPClient rtspClient;
+    protected RTPH264Receiver rtpThread;
+    protected RTCPSender rtcpThread;
     
-    FileOutputStream fos;
-    FileChannel fch;
-    ExecutorService executor;
-    boolean firstFrameReceived;
+    protected FileOutputStream fos;
+    protected FileChannel fch;
+    protected ExecutorService executor;
+    protected boolean firstFrameReceived;
     
     
     public RTPVideoOutput(SensorType driver)

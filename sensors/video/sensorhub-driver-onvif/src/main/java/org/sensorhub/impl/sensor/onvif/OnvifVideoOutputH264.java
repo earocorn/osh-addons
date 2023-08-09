@@ -7,20 +7,19 @@ import org.sensorhub.impl.sensor.rtpcam.RTPVideoOutput;
 import org.sensorhub.impl.sensor.rtpcam.RTSPClient;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.concurrent.Executors;
 
 public class OnvifVideoOutputH264 extends RTPVideoOutput<OnvifCameraDriver> {
 
-    OnvifBasicVideoConfig onvifBasicVideoConfig;
-    OnvifRTSPConfig onvifRTSPConfig;
+
 
     public OnvifVideoOutputH264(String name, OnvifCameraDriver driver) {
         super(name, driver);
     }
 
 
-
-    public void start(String h264Endpoint, int timeout) throws SensorException
+    public void start(URL url, int timeout) throws SensorException
     {
 
         // start payload process executor
@@ -29,16 +28,30 @@ public class OnvifVideoOutputH264 extends RTPVideoOutput<OnvifCameraDriver> {
 
         try
         {
+
+            String remoteHost;
+            int remotePort;
+            String videoPath;
+            int localUdpPort= 20000;
+
+            remoteHost=url.getHost();
+            remotePort=url.getPort();
+            videoPath= url.getPath();
+            String username= parentSensor.getUser();
+            String password= parentSensor.getPassword();
+
+
+
             // setup stream with RTSP server
             //TODO: Populate rtspClient from h264Endpoint
             // cut endpoint string for port and path
             rtspClient = new RTSPClient(
-                    rtspConfig.remoteHost,
-                    rtspConfig.remotePort,
-                    rtspConfig.videoPath,
-                    rtspConfig.user,
-                    rtspConfig.password,
-                    rtspConfig.localUdpPort,
+                    remoteHost,
+                    remotePort,
+                    videoPath,
+                    username,
+                    password,
+                    localUdpPort,
                     timeout);
 
             // some cameras don't have a real RTSP server (i.e. 3DR Solo UAV)
@@ -79,7 +92,7 @@ public class OnvifVideoOutputH264 extends RTPVideoOutput<OnvifCameraDriver> {
             }
             rtpThread.start();
 
-            // play stream with RTSP if server responded to SETUP
+            // play stream with RTSP if server responded to SET UP
             if (rtspClient.isConnected())
             {
                 // send PLAY request
@@ -98,11 +111,9 @@ public class OnvifVideoOutputH264 extends RTPVideoOutput<OnvifCameraDriver> {
     }
 
 
-
     public void stop(){
       super.stop();
     }
-
 
 }
 

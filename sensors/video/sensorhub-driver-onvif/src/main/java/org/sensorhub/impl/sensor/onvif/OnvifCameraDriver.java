@@ -30,6 +30,7 @@ import org.vast.sensorML.SMLFactory;
 import javax.xml.soap.SOAPException;
 import java.net.ConnectException;
 import java.net.URI;
+import java.net.URL;
 import java.util.List;
 import java.util.Optional;
 /**
@@ -71,6 +72,7 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
     OnvifBasicVideoConfig onvifBasicVideoConfig;
 
     URI streamUri;
+    URL streamUrl;
     Profile mjpegProfile;
 
 
@@ -271,8 +273,6 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
         }
         //TODO: mjpegProfile null
 
-        //logger.info("Get bounds: "+ String.valueOf(profile.getVideoSourceConfiguration().getBounds().getWidth()+ " x "+ String.valueOf(profile.getVideoSourceConfiguration().getBounds().getHeight())));
-        //logger.info("Get resolution: "+ String.valueOf(profile.getVideoEncoderConfiguration().getResolution().getWidth()+ " x "+String.valueOf(profile.getVideoEncoderConfiguration().getResolution().getHeight())));
 
         // create I/O objects
         String videoOutName = "video";
@@ -287,44 +287,31 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
             //h264VideoOutput.init(h264Profile.getVideoEncoderConfiguration().getResolution().getWidth(), h264Profile.getVideoEncoderConfiguration().getResolution().getHeight());
 
             h264VideoOutput.init(videoResolution.getWidth(), videoResolution.getHeight());
-/*            h264VideoOutputRTP = new RTPVideoOutput<>(outputName, this); //call to RTPvideoOutput
-//            addOutput(h264VideoOutputRTP, false);
-//            //call to init function to get resolution of video
-//            h264VideoOutputRTP.init(h264Profile.getVideoEncoderConfiguration().getResolution().getWidth(), h264Profile.getVideoEncoderConfiguration().getResolution().getHeight());
-*/
 
-            //TODO: check the difference between init with parameters and without
-            /*
-                 h264VideoOutput= new OnvifVideoOutputH264(this, outputName);
-                addOutput(h264VideoOutput, false);
-                h264VideoOutput.init();
-             */
-
-            //logger.info("logger info source: "+ profile.getVideoSourceConfiguration().getSourceToken());
-            //logger.info("logger info encoder: "+ profile.getVideoEncoderConfiguration().getToken());
             try {
                 try {
-                    streamUri = URI.create(camera.getMedia().getHTTPStreamUri(h264Profile.getToken())); //this is not giving a http
+                    streamUrl= URI.create(camera.getMedia().getHTTPStreamUri(h264Profile.getToken())).toURL();
+                    //streamUri = URI.create(camera.getMedia().getHTTPStreamUri(h264Profile.getToken()));
                 } catch (SOAPException e) {
                     throw new RuntimeException();
                 } catch (SOAPFaultException e) {
                     throw new RuntimeException(e);
                 }
-                logger.info("HTTP Stream: " + streamUri);
+                logger.info("HTTP: " + streamUrl);
             } catch (Exception e) {
-                logger.info("cannot connect to http stream", e);
+                logger.info("h264 stream cannot connect to http", e);
             }
             try{
                 try {
-                    streamUri = URI.create(camera.getMedia().getRTSPStreamUri(h264Profile.getToken()));
+                    streamUrl= URI.create(camera.getMedia().getRTSPStreamUri(h264Profile.getToken())).toURL();
                 } catch (SOAPException e) {
                     throw new RuntimeException();
                 } catch (SOAPFaultException e) {
                     throw new RuntimeException(e);
                 }
-                logger.info("RTSP Stream: " + streamUri);
+                logger.info("RTSP: " + streamUrl);
             } catch (Exception e) {
-                logger.info("cannot connect to rtsp stream", e);
+                logger.info("h264 stream cannot connect to rtsp", e);
             }
 
 
@@ -340,34 +327,37 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
 
         }
          if (config.enableMJPEG) {
-            String outputName = videoOutName + videoOutNum;
-            mjpegVideoOutput = new OnvifVideoOutput(this, outputName);
-            addOutput(mjpegVideoOutput, false);
-            mjpegVideoOutput.init();
+             String outputName = videoOutName + videoOutNum;
+             mjpegVideoOutput = new OnvifVideoOutput(this, outputName);
+             addOutput(mjpegVideoOutput, false);
+             mjpegVideoOutput.init();
 
-           try {
-                try {
-                    streamUri = URI.create(camera.getMedia().getHTTPStreamUri(mjpegProfile.getToken()));
-                } catch (SOAPException e) {
-                    throw new RuntimeException();
-                } catch (SOAPFaultException e) {
-                    throw new RuntimeException(e);
-                }
-                logger.info("Mjpeg HTTP Stream: " + streamUri);
-            } catch (Exception e) {
-                logger.info("Mjpeg: cannot connect to http stream", e);
-            }
+             try {
+                 try {
+                     streamUrl= URI.create(camera.getMedia().getHTTPStreamUri(mjpegProfile.getToken())).toURL();
+                 } catch (SOAPException e) {
+                     throw new RuntimeException();
+                 } catch (SOAPFaultException e) {
+                     throw new RuntimeException(e);
+                 }
+                 logger.info("HTTP: " + streamUrl);
+             } catch (Exception e) {
+                 logger.info("mjpeg stream cannot connect to http", e);
+             }
+             try{
+                 try {
+                     streamUrl= URI.create(camera.getMedia().getRTSPStreamUri(mjpegProfile.getToken())).toURL();
+                 } catch (SOAPException e) {
+                     throw new RuntimeException();
+                 } catch (SOAPFaultException e) {
+                     throw new RuntimeException(e);
+                 }
+                 logger.info("RTSP: " + streamUrl);
+             } catch (Exception e) {
+                 logger.info("mjpeg stream cannot connect to rtsp", e);
+             }
 
-            try {
-                streamUri = URI.create(camera.getMedia().getRTSPStreamUri(mjpegProfile.getToken()));
-            } catch (SOAPException | SOAPFaultException e) {
-                throw new RuntimeException(e);
-            } catch (Exception e) {
-                logger.info("Mjpeg :cannot connect to rtsp stream", e);
-            }
-             logger.info("Mjpeg RTSP Stream: " + streamUri);
         }
-
 
         // add mpeg4 video output
          if (config.enableMPEG4) {
@@ -376,30 +366,32 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
             addOutput(mpeg4VideoOutput, false);
             mpeg4VideoOutput.init();
 
-            try{
-                streamUri= URI.create(camera.getMedia().getHTTPStreamUri(mpeg4Profile.getToken()));
-            } catch (SOAPException e) {
-                throw new RuntimeException();
-            } catch (SOAPFaultException e) {
-                throw new RuntimeException(e);
-            }catch(Exception e){
-                logger.info("cannot connect to http stream", e);
-            }
-             logger.info("HTTP Stream: "+ streamUri);
+             try {
+                 try {
+                     streamUrl= URI.create(camera.getMedia().getHTTPStreamUri(mpeg4Profile.getToken())).toURL();
+                 } catch (SOAPException e) {
+                     throw new RuntimeException();
+                 } catch (SOAPFaultException e) {
+                     throw new RuntimeException(e);
+                 }
+                 logger.info("HTTP: " + streamUrl);
+             } catch (Exception e) {
+                 logger.info("mpeg4 stream cannot connect to http", e);
+             }
+             try{
+                 try {
+                     streamUrl= URI.create(camera.getMedia().getRTSPStreamUri(mpeg4Profile.getToken())).toURL();
+                 } catch (SOAPException e) {
+                     throw new RuntimeException();
+                 } catch (SOAPFaultException e) {
+                     throw new RuntimeException(e);
+                 }
+                 logger.info("RTSP: " + streamUrl);
+             } catch (Exception e) {
+                 logger.info("mpeg4 stream cannot connect to rtsp", e);
+             }
 
-            try{
-                streamUri= URI.create(camera.getMedia().getRTSPStreamUri(mpeg4Profile.getToken()));
-            } catch (SOAPException | SOAPFaultException e) {
-                    throw new RuntimeException(e);
-            }catch(Exception e){
-                logger.info ("cannot connect to rtsp stream", e);
-            }
-             logger.info("RTSP Stream: "+ streamUri);
-
-
-//            logger.info("logger info: "+ profile.getVideoSourceConfiguration().getSourceToken());
-//            logger.info("logger info: "+ profile.getVideoEncoderConfiguration().getToken());
-        }
+         }
         // add PTZ output
         ptzPosOutput = new OnvifPtzOutput(this);
         addOutput(ptzPosOutput, false);
@@ -420,17 +412,14 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
 		// start video output for mpeg4
 		if (mpeg4VideoOutput != null) {
             mpeg4VideoOutput.start();
-            logger.info("Video output for mpeg4 stream is starting");
         }
         //start video output from H264 rtp
         if (h264VideoOutput != null) {
-            h264VideoOutput.start(onvifBasicVideoConfig,onvifRTSPConfig, timeout);
-            logger.info("Video output for h264 stream is starting");
+            h264VideoOutput.start(streamUrl,timeout);
         }
         //start video output for mjpeg
         if (mjpegVideoOutput!=null){
             mjpegVideoOutput.start();
-            logger.info("Video output for mjpeg stream is starting");
         }
 		// start PTZ output
 		if (ptzPosOutput != null && ptzControlInterface != null) {
@@ -468,6 +457,15 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
     @Override
     public void cleanup() {}
 
-    protected String getHostUrl() {return hostIp;}
+    protected String getHostUrl() {
+        return hostIp;
+    }
+
+    protected String getUser() {
+        return user;
+    }
+    protected String getPassword() {
+        return password;
+    }
 
 }

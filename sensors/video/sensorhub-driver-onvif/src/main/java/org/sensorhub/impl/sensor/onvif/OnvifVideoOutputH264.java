@@ -5,10 +5,13 @@ import org.sensorhub.impl.sensor.rtpcam.RTCPSender;
 import org.sensorhub.impl.sensor.rtpcam.RTPH264Receiver;
 import org.sensorhub.impl.sensor.rtpcam.RTPVideoOutput;
 import org.sensorhub.impl.sensor.rtpcam.RTSPClient;
+import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.net.URL;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.util.concurrent.Executors;
+
 
 public class OnvifVideoOutputH264 extends RTPVideoOutput<OnvifCameraDriver> {
 
@@ -19,26 +22,26 @@ public class OnvifVideoOutputH264 extends RTPVideoOutput<OnvifCameraDriver> {
     }
 
 
-    public void start(URL url, int timeout) throws SensorException
+    public void start(URI uri, int timeout) throws SensorException
     {
 
         // start payload process executor
         executor = Executors.newSingleThreadExecutor();
         firstFrameReceived = false;
 
+        String remoteHost;
+        int remotePort;
+        String videoPath;
+        int localUdpPort= 20000;
+
+        remoteHost=parentSensor.getHostUrl();
+        remotePort=uri.getPort();
+        videoPath= uri.getPath();
+        String username= parentSensor.getUser();
+        String password= parentSensor.getPassword();
+
         try
         {
-
-            String remoteHost;
-            int remotePort;
-            String videoPath;
-            int localUdpPort= 20000;
-
-            remoteHost=url.getHost();
-            remotePort=url.getPort();
-            videoPath= url.getPath();
-            String username= parentSensor.getUser();
-            String password= parentSensor.getPassword();
 
 
 

@@ -44,7 +44,7 @@ public class OnvifCameraConfig extends SensorConfig {
     public String password = null;
 
     @DisplayInfo(label = "Path", desc = "ONVIF route of the camera")
-    public String path = "/onvif/device_service";
+    public String path = "/cam/realmonitor?channel=1&subtype=1&unicast=true&proto=Onvif";
 
     @DisplayInfo(label = "Timeout(ms)", desc = "Timeout of connection to the camera")
     public Integer timeout = 5000;

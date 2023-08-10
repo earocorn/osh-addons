@@ -1,53 +1,42 @@
 package org.sensorhub.impl.sensor.onvif;
 
 import org.sensorhub.api.sensor.SensorException;
-import org.sensorhub.impl.sensor.rtpcam.RTCPSender;
-import org.sensorhub.impl.sensor.rtpcam.RTPH264Receiver;
-import org.sensorhub.impl.sensor.rtpcam.RTPVideoOutput;
-import org.sensorhub.impl.sensor.rtpcam.RTSPClient;
-import org.slf4j.Logger;
+import org.sensorhub.impl.sensor.rtpcam.*;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.concurrent.Executors;
 
 
 public class OnvifVideoOutputH264 extends RTPVideoOutput<OnvifCameraDriver> {
 
-
-
     public OnvifVideoOutputH264(String name, OnvifCameraDriver driver) {
         super(name, driver);
     }
 
-
     public void start(URI uri, int timeout) throws SensorException
     {
-
         // start payload process executor
         executor = Executors.newSingleThreadExecutor();
         firstFrameReceived = false;
 
+        String username;
+        String password;
         String remoteHost;
         int remotePort;
         String videoPath;
         int localUdpPort= 20000;
 
+        //populate the parsing of the uri
         remoteHost=parentSensor.getHostUrl();
         remotePort=uri.getPort();
-        videoPath= uri.getPath();
-        String username= parentSensor.getUser();
-        String password= parentSensor.getPassword();
+        videoPath= uri.getPath()+uri.getQuery();
+        username= parentSensor.getUser();
+        password= parentSensor.getPassword();
 
         try
         {
-
-
-
             // setup stream with RTSP server
-            //TODO: Populate rtspClient from h264Endpoint
-            // cut endpoint string for port and path
             rtspClient = new RTSPClient(
                     remoteHost,
                     remotePort,
@@ -59,16 +48,18 @@ public class OnvifVideoOutputH264 extends RTPVideoOutput<OnvifCameraDriver> {
 
             // some cameras don't have a real RTSP server (i.e. 3DR Solo UAV)
             // in this case we just need to maintain a TCP connection so keep the RTSP client alive
-            if (!rtspConfig.onlyConnectRtsp)
-            {
-                rtspClient.sendOptions();
-                rtspClient.sendDescribe();
-                rtspClient.sendSetup();
-                log.info("Connected to RTSP server");
-            }
+
+            //if (){
+            rtspClient.sendOptions();
+            rtspClient.sendDescribe();
+            rtspClient.sendSetup();
+            log.info("Connected to RTSP server");
+          //  }
+
+
 
             // start RTP/H264 receiving thread
-            rtpThread = new RTPH264Receiver(rtspConfig.remoteHost, rtspClient.getRemoteRtpPort(), rtspConfig.localUdpPort, this);
+            rtpThread = new RTPH264Receiver(remoteHost, rtspClient.getRemoteRtpPort(), localUdpPort, this);
             RTSPClient.StreamInfo h264Stream = null;
             int streamIndex = 0;
             int i = 0;
@@ -103,7 +94,7 @@ public class OnvifVideoOutputH264 extends RTPVideoOutput<OnvifCameraDriver> {
 
                 // start RTCP sending thread
                 // some cameras need that to maintain the stream
-                rtcpThread = new RTCPSender(rtspConfig.remoteHost, rtspConfig.localUdpPort+1, rtspClient.getRemoteRtcpPort(), 1000, rtspClient);
+                rtcpThread = new RTCPSender(remoteHost, localUdpPort+1, rtspClient.getRemoteRtcpPort(), 1000, rtspClient);
                 rtcpThread.start();
             }
         }
@@ -113,10 +104,6 @@ public class OnvifVideoOutputH264 extends RTPVideoOutput<OnvifCameraDriver> {
         }
     }
 
-
-    public void stop(){
-      super.stop();
-    }
 
 }
 

@@ -66,13 +66,7 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
     String modelNumber;
     String shortName;
     String longName;
-    String profileToken;
-    OnvifRTSPConfig onvifRTSPConfig;
-    VideoResolution videoResolution;
-    OnvifBasicVideoConfig onvifBasicVideoConfig;
-
     URI streamUri;
-    URL streamUrl;
     Profile mjpegProfile;
 
 
@@ -158,89 +152,22 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
 
         //Media profile for video stream
         for (Profile mediaProfile :profiles) {
-            logger.info("Media Profile Found: " + mediaProfile.getName());
             VideoEncoderConfiguration videoEncoderConfiguration = mediaProfile.getVideoEncoderConfiguration();
             VideoEncoding videoEncoding = videoEncoderConfiguration.getEncoding();
-            MediaDevice media = camera.getMedia();
-            profileToken = mediaProfile.getToken();
-            logger.info("profile token: " + mediaProfile.getToken());
-            VideoEncoderConfigurationOptions videoEncoderConfigurationOptions;
-            try {
-                videoEncoderConfigurationOptions = media.getVideoEncoderConfigurationOptions(profileToken);
-            } catch (SOAPException | ConnectException | SOAPFaultException e) {
-                throw new RuntimeException(e);
-            }
 
+            //h264 video encoder
             if (videoEncoding == VideoEncoding.H_264) {
                 h264Profile = mediaProfile;
-                H264Options h264Options = videoEncoderConfigurationOptions.getH264();
-                //video res are being put into a list
-                List<VideoResolution> resolutionsAvailable = h264Options.getResolutionsAvailable();
-                h264Profile.getVideoEncoderConfiguration();
-                videoResolution= resolutionsAvailable.get(0);
-                videoEncoderConfiguration.setResolution(videoResolution);
-                logger.info("h264 Resolution: " + videoResolution.getWidth() + "x" + videoResolution.getHeight());
-                videoEncoderConfiguration.setQuality(videoEncoderConfigurationOptions.getQualityRange().getMax());
-                VideoRateControl videoRateControl = videoEncoderConfiguration.getRateControl();
-                videoRateControl.setFrameRateLimit(h264Options.getFrameRateRange().getMax());
-                videoRateControl.setEncodingInterval(h264Options.getEncodingIntervalRange().getMin());
-                videoRateControl.setBitrateLimit(videoRateControl.getBitrateLimit());
-                videoEncoderConfiguration.setRateControl(videoRateControl);
-                h264Profile.setVideoEncoderConfiguration(videoEncoderConfiguration);
-                try {
-                    media.setVideoEncoderConfiguration(videoEncoderConfiguration);
-                } catch (SOAPException | ConnectException | SOAPFaultException e) {
-                    throw new RuntimeException(e);
-                }
             }
 
             //MPEG4 video Encoder
             if (videoEncoding == VideoEncoding.MPEG_4) {
-                logger.info("mpeg4 profile token" + mediaProfile.getToken());
                 mpeg4Profile = mediaProfile;
-
-                Mpeg4Options mpeg4Options = videoEncoderConfigurationOptions.getMPEG4();
-                List<VideoResolution> resolutionsAvailable = mpeg4Options.getResolutionsAvailable();
-                mpeg4Profile.getVideoEncoderConfiguration();
-                videoResolution= resolutionsAvailable.get(0);
-                videoEncoderConfiguration.setResolution(videoResolution);
-                logger.info("mpeg4 resolution: " + videoResolution.getWidth() + "x" + videoResolution.getHeight());
-                videoEncoderConfiguration.setQuality(videoEncoderConfigurationOptions.getQualityRange().getMax());
-                VideoRateControl videoRateControl = videoEncoderConfiguration.getRateControl();
-                videoRateControl.setFrameRateLimit(mpeg4Options.getFrameRateRange().getMax());
-                videoRateControl.setEncodingInterval(mpeg4Options.getEncodingIntervalRange().getMin());
-                videoRateControl.setBitrateLimit(videoRateControl.getBitrateLimit());
-                videoEncoderConfiguration.setRateControl(videoRateControl);
-                mpeg4Profile.setVideoEncoderConfiguration(videoEncoderConfiguration);
-                try {
-                    media.setVideoEncoderConfiguration(videoEncoderConfiguration);
-                } catch (SOAPException | ConnectException | SOAPFaultException e) {
-                    throw new RuntimeException(e);
-                }
             }
 
             //Mjpeg video Encoder
             if (videoEncoding == VideoEncoding.JPEG) {
-                logger.info("mjpeg profile token" + mediaProfile.getToken());
                 mjpegProfile = mediaProfile;
-                JpegOptions jpegOptions = videoEncoderConfigurationOptions.getJPEG();
-                List<VideoResolution> resolutionsAvailable = jpegOptions.getResolutionsAvailable();
-                mjpegProfile.getVideoEncoderConfiguration();
-                videoResolution= resolutionsAvailable.get(0);
-                videoEncoderConfiguration.setResolution(videoResolution);
-                logger.info("resolution: " + videoResolution.getWidth() + "x" + videoResolution.getHeight());
-                videoEncoderConfiguration.setQuality(videoEncoderConfigurationOptions.getQualityRange().getMax());
-                VideoRateControl videoRateControl = videoEncoderConfiguration.getRateControl();
-                videoRateControl.setFrameRateLimit(jpegOptions.getFrameRateRange().getMax());
-                videoRateControl.setEncodingInterval(jpegOptions.getEncodingIntervalRange().getMin());
-                videoRateControl.setBitrateLimit(videoRateControl.getBitrateLimit());
-                videoEncoderConfiguration.setRateControl(videoRateControl);
-                mjpegProfile.setVideoEncoderConfiguration(videoEncoderConfiguration);
-                try {
-                    media.setVideoEncoderConfiguration(videoEncoderConfiguration);
-                } catch (SOAPException | ConnectException | SOAPFaultException e) {
-                    throw new RuntimeException(e);
-                }
             }
         }
             //ptz profiles
@@ -257,8 +184,7 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
                 throw new SensorHubException("Camera does not have any profiles capable of PTZ for "+ hostIp);
             }
 
-        //get media profile
-
+        //Profile Configurations
         if(h264Profile!=null) {
             H264Configuration h264Config = h264Profile.getVideoEncoderConfiguration().getH264();
             if (config.enableH264 && h264Config == null) {
@@ -281,30 +207,13 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
         //h264 configuration enabled
         if (config.enableH264) {
             String outputName = videoOutName + videoOutNum; //output name
-            h264VideoOutput = new OnvifVideoOutputH264(outputName, this); //call to RTPvideoOutput
+            h264VideoOutput = new OnvifVideoOutputH264(outputName, this);
             addOutput(h264VideoOutput, false);
             //call to init function to get resolution of video
-            //h264VideoOutput.init(h264Profile.getVideoEncoderConfiguration().getResolution().getWidth(), h264Profile.getVideoEncoderConfiguration().getResolution().getHeight());
-
-            h264VideoOutput.init(videoResolution.getWidth(), videoResolution.getHeight());
-
-            try {
-                try {
-                    //streamUrl= URI.create(camera.getMedia().getHTTPStreamUri(h264Profile.getToken())).toURL();
-                    streamUri = URI.create(camera.getMedia().getHTTPStreamUri(h264Profile.getToken()));
-                } catch (SOAPException e) {
-                    throw new RuntimeException();
-                } catch (SOAPFaultException e) {
-                    throw new RuntimeException(e);
-                }
-                logger.info("HTTP: " + streamUri);
-            } catch (Exception e) {
-                logger.info("h264 stream cannot connect to http", e);
-            }
+            h264VideoOutput.init(h264Profile.getVideoEncoderConfiguration().getResolution().getWidth(), h264Profile.getVideoEncoderConfiguration().getResolution().getHeight());
             try{
                 try {
-                    //streamUrl= URI.create(camera.getMedia().getRTSPStreamUri(h264Profile.getToken())).toURL();
-                    streamUri = URI.create(camera.getMedia().getHTTPStreamUri(h264Profile.getToken()));
+                    streamUri = URI.create(camera.getMedia().getRTSPStreamUri(h264Profile.getToken()));
                 } catch (SOAPException e) {
                     throw new RuntimeException();
                 } catch (SOAPFaultException e) {
@@ -314,18 +223,6 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
             } catch (Exception e) {
                 logger.info("h264 stream cannot connect to rtsp", e);
             }
-
-
-           /* try {
-                logger.info("http uri:" + camera.getMedia().getHTTPStreamUri(h264Profile.getToken()));  //this is what it needs to work
-            } catch (ConnectException e) {
-                throw new RuntimeException(e);
-            } catch (SOAPException e) {
-                throw new RuntimeException(e);
-            } catch (SOAPFaultException e) {
-                throw new RuntimeException(e);
-            }*/
-
         }
          if (config.enableMJPEG) {
              String outputName = videoOutName + videoOutNum;
@@ -335,7 +232,6 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
 
              try {
                  try {
-                     //streamUrl= URI.create(camera.getMedia().getHTTPStreamUri(mjpegProfile.getToken())).toURL();
                      streamUri = URI.create(camera.getMedia().getHTTPStreamUri(mjpegProfile.getToken()));
                  } catch (SOAPException e) {
                      throw new RuntimeException();
@@ -348,7 +244,6 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
              }
              try{
                  try {
-                     //streamUrl= URI.create(camera.getMedia().getRTSPStreamUri(mjpegProfile.getToken())).toURL();
                      streamUri = URI.create(camera.getMedia().getHTTPStreamUri(mjpegProfile.getToken()));
                  } catch (SOAPException e) {
                      throw new RuntimeException();
@@ -372,7 +267,6 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
              try {
                  try {
                      streamUri = URI.create(camera.getMedia().getHTTPStreamUri(mpeg4Profile.getToken()));
-                     //streamUrl= URI.create(camera.getMedia().getHTTPStreamUri(mpeg4Profile.getToken())).toURL();
                  } catch (SOAPException e) {
                      throw new RuntimeException();
                  } catch (SOAPFaultException e) {
@@ -385,7 +279,6 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
              try{
                  try {
                      streamUri = URI.create(camera.getMedia().getHTTPStreamUri(mpeg4Profile.getToken()));
-                    // streamUrl= URI.create(camera.getMedia().getRTSPStreamUri(mpeg4Profile.getToken())).toURL();
                  } catch (SOAPException e) {
                      throw new RuntimeException();
                  } catch (SOAPFaultException e) {

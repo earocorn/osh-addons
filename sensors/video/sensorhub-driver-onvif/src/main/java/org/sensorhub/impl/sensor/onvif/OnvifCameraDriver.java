@@ -17,20 +17,21 @@ package org.sensorhub.impl.sensor.onvif;
 
 import de.onvif.soap.OnvifDevice;
 import de.onvif.soap.devices.InitialDevice;
-import de.onvif.soap.devices.MediaDevice;
+//import de.onvif.soap.devices.MediaDevice;
 import de.onvif.soap.exception.SOAPFaultException;
 import net.opengis.sensorml.v20.IdentifierList;
 import org.onvif.ver10.device.wsdl.GetDeviceInformationResponse;
 import org.onvif.ver10.schema.*;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.sensor.SensorException;
+import org.sensorhub.impl.module.RobustConnection;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.vast.sensorML.SMLFactory;
 
 import javax.xml.soap.SOAPException;
 import java.net.ConnectException;
 import java.net.URI;
-import java.net.URL;
+//import java.net.URL;
 import java.util.List;
 import java.util.Optional;
 /**
@@ -45,7 +46,11 @@ import java.util.Optional;
 
 public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
 {
-    OnvifVideoOutputH264 h264VideoOutput;
+    //OnvifVideoOutputH264 h264VideoOutput;
+    RobustConnection connection;
+    //outputH264 h264VideoOutput;
+
+    OnvifVideoH264 h264VideoOutput;
     OnvifVideoOutput mpeg4VideoOutput;
     OnvifVideoOutput mjpegVideoOutput;
 
@@ -68,7 +73,11 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
     String longName;
     URI streamUri;
     Profile mjpegProfile;
+    OnvifBasicVideoConfig onvifBasicVideoConfig;
+    OnvifRTSPConfig onvifRTSPConfig;
 
+//    BasicVideoConfig videoConfig;
+//    RTSPConfig rtspConfig;
 
     public OnvifCameraDriver() {
     }
@@ -82,6 +91,7 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
         path = config.path;
         timeout = config.timeout;
     }
+
 
     @Override
     protected void doInit() throws SensorHubException {
@@ -146,7 +156,7 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
         List<Profile> profiles = camera.getDevices().getProfiles();
         logger.info("Number of profiles: " + profiles.size());
 
-        if (profiles == null || profiles.isEmpty()) {
+        if (profiles.isEmpty()) {
             throw new SensorHubException("Camera does not have any profiles to use");
         }
 
@@ -190,6 +200,7 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
             if (config.enableH264 && h264Config == null) {
                 throw new SensorException("Cannot connect to H264 stream - H264 not supported");
             }
+
         }
         if(mpeg4Profile!=null) {
             Mpeg4Configuration mpeg4Config = mpeg4Profile.getVideoEncoderConfiguration().getMPEG4();
@@ -207,8 +218,11 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
         //h264 configuration enabled
         if (config.enableH264) {
             String outputName = videoOutName + videoOutNum; //output name
-            h264VideoOutput = new OnvifVideoOutputH264(outputName, this);
+            //h264VideoOutput = new OnvifVideoOutputH264(outputName, this);
+            //h264VideoOutput= new outputH264(outputName,this);
+            h264VideoOutput= new OnvifVideoH264(outputName, this);
             addOutput(h264VideoOutput, false);
+
             //call to init function to get resolution of video
             h264VideoOutput.init(h264Profile.getVideoEncoderConfiguration().getResolution().getWidth(), h264Profile.getVideoEncoderConfiguration().getResolution().getHeight());
             try{
@@ -223,7 +237,15 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
             } catch (Exception e) {
                 logger.info("h264 stream cannot connect to rtsp", e);
             }
+            int frameRate;
+            frameRate= h264Profile.getVideoEncoderConfiguration().getRateControl().getFrameRateLimit();
+
+            onvifRTSPConfig = new OnvifRTSPConfig(streamUri,user, password, hostIp);
+            onvifBasicVideoConfig= new OnvifBasicVideoConfig(frameRate, false, null);
+
         }
+
+        //add mjpeg video output
          if (config.enableMJPEG) {
              String outputName = videoOutName + videoOutNum;
              mjpegVideoOutput = new OnvifVideoOutput(this, outputName);
@@ -233,6 +255,7 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
              try {
                  try {
                      streamUri = URI.create(camera.getMedia().getHTTPStreamUri(mjpegProfile.getToken()));
+                     
                  } catch (SOAPException e) {
                      throw new RuntimeException();
                  } catch (SOAPFaultException e) {
@@ -311,10 +334,14 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
 		if (mpeg4VideoOutput != null) {
             mpeg4VideoOutput.start();
         }
+
         //start video output from H264 rtp
-        if (h264VideoOutput != null) {
-            h264VideoOutput.start(streamUri,timeout);
+        if (h264VideoOutput!=null){
+            h264VideoOutput.start();
+            //h264VideoOutput.start(onvifBasicVideoConfig, onvifRTSPConfig, timeout);
+            //h264VideoOutput.start(streamUri,timeout);
         }
+
         //start video output for mjpeg
         if (mjpegVideoOutput!=null){
             mjpegVideoOutput.start();
@@ -351,19 +378,15 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
 
     @Override
     protected void doStop() {}
-
     @Override
     public void cleanup() {}
-
-    protected String getHostUrl() {
-        return hostIp;
-    }
-
+    protected String getHostUrl() {return hostIp;}
     protected String getUser() {
         return user;
     }
     protected String getPassword() {
         return password;
     }
+
 
 }

@@ -2,6 +2,7 @@ package org.sensorhub.impl.sensor.onvif;
 
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.rtpcam.*;
+import org.sensorhub.impl.sensor.videocam.BasicVideoConfig;
 
 import java.io.IOException;
 import java.net.URI;
@@ -16,6 +17,7 @@ public class OnvifVideoOutputH264 extends RTPVideoOutput<OnvifCameraDriver> {
 
     public void start(URI uri, int timeout) throws SensorException
     {
+
         // start payload process executor
         executor = Executors.newSingleThreadExecutor();
         firstFrameReceived = false;
@@ -49,12 +51,12 @@ public class OnvifVideoOutputH264 extends RTPVideoOutput<OnvifCameraDriver> {
             // some cameras don't have a real RTSP server (i.e. 3DR Solo UAV)
             // in this case we just need to maintain a TCP connection so keep the RTSP client alive
 
-            //if (){
-            rtspClient.sendOptions();
-            rtspClient.sendDescribe();
-            rtspClient.sendSetup();
-            log.info("Connected to RTSP server");
-          //  }
+           // if (){
+//            rtspClient.sendOptions();
+//            rtspClient.sendDescribe();
+//            rtspClient.sendSetup();
+//            log.info("Connected to RTSP server");
+           // }
 
 
 

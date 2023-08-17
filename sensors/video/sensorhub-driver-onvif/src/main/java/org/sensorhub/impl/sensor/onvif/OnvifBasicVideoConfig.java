@@ -9,12 +9,6 @@ public class OnvifBasicVideoConfig extends BasicVideoConfig {
         this.frameRate=fr;
         this.grayscale=grayScale;
         this.backupFile=backUpFile;
-
-       //this.frameRate= h264Profile.getVideoEncoderConfiguration().getRateControl().getFrameRateLimit();
-//        onvifBasicVideoConfig.grayscale= false;
-//        onvifBasicVideoConfig.backupFile=null;
-
-
     }
 
     @Override

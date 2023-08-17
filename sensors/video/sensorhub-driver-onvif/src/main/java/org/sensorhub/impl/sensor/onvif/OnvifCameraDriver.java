@@ -59,6 +59,7 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
     OnvifPtzControl ptzControlInterface;
     String hostIp;
     Integer port;
+    Integer udpPort;
     String user;
     String password;
     String path;
@@ -76,9 +77,6 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
     OnvifBasicVideoConfig onvifBasicVideoConfig;
     OnvifRTSPConfig onvifRTSPConfig;
 
-//    BasicVideoConfig videoConfig;
-//    RTSPConfig rtspConfig;
-
     public OnvifCameraDriver() {
     }
     @Override
@@ -90,8 +88,8 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
         password = config.password;
         path = config.path;
         timeout = config.timeout;
+        udpPort=config.udpPort;
     }
-
 
     @Override
     protected void doInit() throws SensorHubException {
@@ -240,7 +238,7 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
             int frameRate;
             frameRate= h264Profile.getVideoEncoderConfiguration().getRateControl().getFrameRateLimit();
 
-            onvifRTSPConfig = new OnvifRTSPConfig(streamUri,user, password, hostIp);
+            onvifRTSPConfig = new OnvifRTSPConfig(user, password, hostIp, port, path, udpPort);
             onvifBasicVideoConfig= new OnvifBasicVideoConfig(frameRate, false, null);
 
         }
@@ -327,8 +325,9 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
     @Override
     protected void doStart() throws SensorHubException {
 		// Validate connection to camera
-		if (camera == null)
-			throw new SensorHubException("Exception occurred when connecting to camera");
+		if (camera == null) {
+            throw new SensorHubException("Exception occurred when connecting to camera");
+        }
 
 		// start video output for mpeg4
 		if (mpeg4VideoOutput != null) {
@@ -337,9 +336,8 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
 
         //start video output from H264 rtp
         if (h264VideoOutput!=null){
-            h264VideoOutput.start();
-            //h264VideoOutput.start(onvifBasicVideoConfig, onvifRTSPConfig, timeout);
-            //h264VideoOutput.start(streamUri,timeout);
+            //h264VideoOutput.start();
+            h264VideoOutput.start(onvifBasicVideoConfig, onvifRTSPConfig, timeout);
         }
 
         //start video output for mjpeg
@@ -372,8 +370,12 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
 
     @Override
     public boolean isConnected() {
-        logger.info("Camera is connected");
-        return camera != null;
+//        logger.info("Camera is connected");
+//        return camera != null;
+        if (connection==null){
+            return false;
+        }
+        return connection.isConnected();
     }
 
     @Override

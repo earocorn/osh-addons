@@ -10,16 +10,16 @@ import java.io.IOException;
 import java.util.concurrent.Executors;
 
 public class outputH264  extends RTPVideoOutput<OnvifCameraDriver> {
+
+
     public outputH264(String name, OnvifCameraDriver driver) {
         super(name, driver);
     }
 
-
     public void start(OnvifBasicVideoConfig onvifBasicVideoConfig, OnvifRTSPConfig onvifRTSPConfig, int timeout) throws SensorException {
 
-
-        this.videoConfig=onvifBasicVideoConfig;
-        this.rtspConfig=onvifRTSPConfig;
+//        this.videoConfig=onvifBasicVideoConfig;
+//        this.rtspConfig=onvifRTSPConfig;
 
         // start payload process executor
         executor = Executors.newSingleThreadExecutor();
@@ -46,7 +46,7 @@ public class outputH264  extends RTPVideoOutput<OnvifCameraDriver> {
             }
 
             // start RTP/H264 receiving thread
-            rtpThread = new RTPH264Receiver(onvifRTSPConfig.remoteHost, rtspClient.getRemoteRtpPort(), onvifRTSPConfig.localUdpPort, this);
+            rtpThread = new RTPH264Receiver(parentSensor.getHostUrl(),rtspClient.getRemoteRtpPort(), onvifRTSPConfig.localUdpPort, this);
             RTSPClient.StreamInfo h264Stream = null;
             int streamIndex = 0;
             int i = 0;
@@ -77,7 +77,7 @@ public class outputH264  extends RTPVideoOutput<OnvifCameraDriver> {
 
                 // start RTCP sending thread
                 // some cameras need that to maintain the stream
-                rtcpThread = new RTCPSender(rtspConfig.remoteHost, rtspConfig.localUdpPort + 1, rtspClient.getRemoteRtcpPort(), 1000, rtspClient);
+                rtcpThread = new RTCPSender(onvifRTSPConfig.remoteHost, onvifRTSPConfig.localUdpPort + 1, rtspClient.getRemoteRtcpPort(), 1000, rtspClient);
                 rtcpThread.start();
             }
         } catch (IOException e) {

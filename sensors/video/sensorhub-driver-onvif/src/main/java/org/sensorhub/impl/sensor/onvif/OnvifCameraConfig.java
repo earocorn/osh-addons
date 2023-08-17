@@ -18,6 +18,8 @@ package org.sensorhub.impl.sensor.onvif;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.config.DisplayInfo.Required;
 import org.sensorhub.api.sensor.SensorConfig;
+import org.sensorhub.impl.sensor.videocam.BasicVideoConfig;
+import org.sensorhub.impl.sensor.videocam.VideoResolution;
 
 /**
  * <p>
@@ -36,6 +38,8 @@ public class OnvifCameraConfig extends SensorConfig {
 
     @DisplayInfo(label = "Port", desc = "Port number of the camera")
     public Integer port = 80;
+    @DisplayInfo(label = "UdpPort", desc = "Port number of the camera")
+    public Integer udpPort = 20000;
 
     @DisplayInfo(label = "User Login", desc = "User that will be logged into for issuing PTZ commands")
     public String user = null;
@@ -57,5 +61,7 @@ public class OnvifCameraConfig extends SensorConfig {
 
     @DisplayInfo(label = "Enable MJPEG", desc = "Enable MPEG4 encoded video output (accessible through HTTP)")
     public boolean enableMJPEG = false;
+
+
 
 }

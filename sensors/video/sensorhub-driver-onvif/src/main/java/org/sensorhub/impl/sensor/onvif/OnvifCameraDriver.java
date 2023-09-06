@@ -53,6 +53,9 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
     OnvifVideoH264 h264VideoOutput;
     OnvifVideoOutput mpeg4VideoOutput;
     OnvifVideoOutput mjpegVideoOutput;
+    Boolean hasH264 = false;
+    Boolean hasMpeg = false;
+    Boolean hasMjpeg = false;
 
 //    OnvifVideoControl videoControlInterface;
     OnvifPtzOutput ptzPosOutput;
@@ -195,14 +198,16 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
         //Profile Configurations
         if(h264Profile!=null) {
             H264Configuration h264Config = h264Profile.getVideoEncoderConfiguration().getH264();
-            if (config.enableH264 && h264Config == null) {
+            hasH264 = true;
+            if (h264Config == null) {
                 throw new SensorException("Cannot connect to H264 stream - H264 not supported");
             }
 
         }
         if(mpeg4Profile!=null) {
             Mpeg4Configuration mpeg4Config = mpeg4Profile.getVideoEncoderConfiguration().getMPEG4();
-            if (config.enableMPEG4 && mpeg4Config == null) {
+            hasMpeg = true;
+            if (mpeg4Config == null) {
                 throw new SensorException("Cannot connect to MPEG4 stream - MPEG4 not supported");
             }
         }
@@ -214,7 +219,7 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
         int videoOutNum = 1;
 
         //h264 configuration enabled
-        if (config.enableH264) {
+        if (hasH264) {
             String outputName = videoOutName + videoOutNum; //output name
             //h264VideoOutput = new OnvifVideoOutputH264(outputName, this);
             //h264VideoOutput= new outputH264(outputName,this);
@@ -244,7 +249,7 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
         }
 
         //add mjpeg video output
-         if (config.enableMJPEG) {
+         if (hasMjpeg) {
              String outputName = videoOutName + videoOutNum;
              mjpegVideoOutput = new OnvifVideoOutput(this, outputName);
              addOutput(mjpegVideoOutput, false);
@@ -279,7 +284,7 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
         }
 
         // add mpeg4 video output
-         if (config.enableMPEG4) {
+         if (hasMpeg) {
             String outputName = videoOutName + videoOutNum;
             mpeg4VideoOutput = new OnvifVideoOutput(this, outputName);
             addOutput(mpeg4VideoOutput, false);

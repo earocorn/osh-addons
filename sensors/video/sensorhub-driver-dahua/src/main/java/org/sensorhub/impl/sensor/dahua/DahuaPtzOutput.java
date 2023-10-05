@@ -33,6 +33,7 @@ import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
+import org.vast.swe.helper.GeoPosHelper;
 
 
 /**
@@ -58,6 +59,8 @@ public class DahuaPtzOutput extends AbstractSensorOutput<DahuaCameraDriver>
     
     // latest PTZ values
     float pan, tilt, zoom;
+
+    GeoPosHelper test = new GeoPosHelper();
     
 
     public DahuaPtzOutput(DahuaCameraDriver driver)

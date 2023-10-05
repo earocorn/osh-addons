@@ -38,29 +38,29 @@ public class OnvifCameraConfig extends SensorConfig {
 
     @DisplayInfo(label = "Port", desc = "Port number of the camera")
     public Integer port = 80;
-    @DisplayInfo(label = "UdpPort", desc = "Port number of the camera")
-    public Integer udpPort = 20000;
+//    @DisplayInfo(label = "UdpPort", desc = "Port number of the camera")
+//    public Integer udpPort = 20000;
 
     @DisplayInfo(label = "User Login", desc = "User that will be logged into for issuing PTZ commands")
     public String user = null;
 
     @DisplayInfo(label = "Password", desc = "Password used to login to user")
     public String password = null;
-
-    @DisplayInfo(label = "Path", desc = "ONVIF route of the camera")
-    public String path = "/cam/realmonitor?channel=1&subtype=1&unicast=true&proto=Onvif";
+//
+//    @DisplayInfo(label = "Path", desc = "ONVIF route of the camera")
+//    public String path = "/cam/realmonitor?channel=1&subtype=1&unicast=true&proto=Onvif";
 
     @DisplayInfo(label = "Timeout(ms)", desc = "Timeout of connection to the camera")
     public Integer timeout = 5000;
-
-    @DisplayInfo(label = "Enable H264", desc = "Enable H264 encoded video output (accessible through RTSP)")
-    public boolean enableH264 = false;
-
-    @DisplayInfo(label = "Enable MPEG4", desc = "Enable MPEG4 encoded video output (accessible through HTTP/RTSP)")
-    public boolean enableMPEG4 = false;
-
-    @DisplayInfo(label = "Enable MJPEG", desc = "Enable MPEG4 encoded video output (accessible through HTTP)")
-    public boolean enableMJPEG = false;
+//
+//    @DisplayInfo(label = "Enable H264", desc = "Enable H264 encoded video output (accessible through RTSP)")
+//    public boolean enableH264 = false;
+//
+//    @DisplayInfo(label = "Enable MPEG4", desc = "Enable MPEG4 encoded video output (accessible through HTTP/RTSP)")
+//    public boolean enableMPEG4 = false;
+//
+//    @DisplayInfo(label = "Enable MJPEG", desc = "Enable MPEG4 encoded video output (accessible through HTTP)")
+//    public boolean enableMJPEG = false;
 
 
 

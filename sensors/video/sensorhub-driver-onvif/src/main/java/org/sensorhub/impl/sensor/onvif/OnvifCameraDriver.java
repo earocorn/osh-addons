@@ -62,6 +62,7 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
     OnvifPtzControl ptzControlInterface;
     String hostIp;
     Integer port;
+    Integer rtspPort;
     Integer udpPort;
     String user;
     String password;
@@ -89,9 +90,9 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
         port = config.port;
         user = config.user;
         password = config.password;
-        path = config.path;
+//        path = config.path;
         timeout = config.timeout;
-        udpPort=config.udpPort;
+//        udpPort=config.udpPort;
     }
 
     @Override
@@ -231,6 +232,8 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
             try{
                 try {
                     streamUri = URI.create(camera.getMedia().getRTSPStreamUri(h264Profile.getToken()));
+                    path = streamUri.getPath();
+                    rtspPort = streamUri.getPort();
                 } catch (SOAPException e) {
                     throw new RuntimeException();
                 } catch (SOAPFaultException e) {
@@ -243,7 +246,7 @@ public class OnvifCameraDriver extends AbstractSensorModule <OnvifCameraConfig>
             int frameRate;
             frameRate= h264Profile.getVideoEncoderConfiguration().getRateControl().getFrameRateLimit();
 
-            onvifRTSPConfig = new OnvifRTSPConfig(user, password, hostIp, port, path, udpPort);
+            onvifRTSPConfig = new OnvifRTSPConfig(user, password, hostIp, port, path, rtspPort);
             onvifBasicVideoConfig= new OnvifBasicVideoConfig(frameRate, false, null);
 
         }

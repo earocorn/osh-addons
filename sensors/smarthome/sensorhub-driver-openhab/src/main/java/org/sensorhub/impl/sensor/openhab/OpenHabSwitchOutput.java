@@ -17,7 +17,7 @@ public class OpenHabSwitchOutput extends AbstractSensorOutput<OpenHabDriver>
 	DataBlock switchBlock;
 	
 	public OpenHabSwitchOutput(OpenHabDriver parentSensor) {
-		super(parentSensor);
+		super(parentSensor.getName(), parentSensor);
 	}
 	
 	@Override
@@ -56,7 +56,8 @@ public class OpenHabSwitchOutput extends AbstractSensorOutput<OpenHabDriver>
     	double lat = Double.NaN;
     	double lon = Double.NaN;
     	double alt = Double.NaN;
-    	String locDesc = (switchThing.getLocation().isEmpty()) ? "undeclared" : switchThing.getLocation();
+//    	String locDesc = (switchThing.getLocation().isEmpty()) ? "undeclared" : switchThing.getLocation();
+		String locDesc = switchThing.getLocation();
 
     	// build and publish databook
     	DataBlock dataBlock = switchComp.createDataBlock();

@@ -17,7 +17,7 @@ public class OpenHabDimmerOutput extends AbstractSensorOutput<OpenHabDriver>
 	DataBlock dimmerBlock;
 	
 	public OpenHabDimmerOutput(OpenHabDriver parentSensor) {
-		super(parentSensor);
+		super(parentSensor.getName(), parentSensor);
 	}
 	
 	@Override
@@ -56,8 +56,9 @@ public class OpenHabDimmerOutput extends AbstractSensorOutput<OpenHabDriver>
     	double lat = Double.NaN;
     	double lon = Double.NaN;
     	double alt = Double.NaN;
-    	String locDesc = (dimThing.getLocation().isEmpty()) ? "undeclared" : dimThing.getLocation();
-    	
+//    	String locDesc = (dimThing.getLocation().isEmpty()) ? "undeclared" : dimThing.getLocation();
+    	String locDesc = dimThing.getLocation();
+
     	// build and publish databook
     	DataBlock dataBlock = dimmerComp.createDataBlock();
     	dataBlock.setStringValue(0, dimItem.getName());

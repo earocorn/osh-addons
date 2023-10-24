@@ -45,6 +45,7 @@ public class OpenHabDriver extends AbstractSensorModule<OpenHabConfig>
 	OpenHabHandler itemsHandler = new OpenHabHandler();
 
 	String hostURL;
+	String urlCredentials;   // Adds authentication (username & password) for connection to remote url
 	Timer timer;
 	
 	List<Boolean> isEntryAlarm = new ArrayList<Boolean>();
@@ -59,8 +60,8 @@ public class OpenHabDriver extends AbstractSensorModule<OpenHabConfig>
 	List<Boolean> isSwitchDimmer = new ArrayList<Boolean>();
 	List<Boolean> isBatteryLevel = new ArrayList<Boolean>();
 	
-    public OpenHabDriver()
-    {
+    public OpenHabDriver() {
+
     }
 
     @Override
@@ -70,6 +71,7 @@ public class OpenHabDriver extends AbstractSensorModule<OpenHabConfig>
         
         // compute full host URL
         hostURL = "http://" + config.http.remoteHost + ":" + config.http.remotePort + "/rest";
+		urlCredentials = config.http.user + ":" + config.http.password;
     };
     
     @Override
@@ -84,7 +86,7 @@ public class OpenHabDriver extends AbstractSensorModule<OpenHabConfig>
     	// Get all available things and step through them to get all unique item
     	// names and types. Types are obtained from channel binding types, which should
     	// be consistent and not be changeable
-    	OpenHabThings[] habThings = thingsHandler.getThingsFromJSON(getHostURL() + "/things");
+    	OpenHabThings[] habThings = thingsHandler.getThingsFromJSON(getHostURL() + "/things", getUrlCredentials());
 //    	System.out.println("things length = " + habThings.length);
 	  
     	// Loop through list of "Things"
@@ -421,7 +423,7 @@ public class OpenHabDriver extends AbstractSensorModule<OpenHabConfig>
     	// Get all available things and step through them to get all unique item
     	// names and types. Types are obtained from channel binding types, which should
     	// be consistent and not be changeable
-    	OpenHabThings[] habThingsStart = thingsHandler.getThingsFromJSON(getHostURL() + "/things");
+    	OpenHabThings[] habThingsStart = thingsHandler.getThingsFromJSON(getHostURL() + "/things", getUrlCredentials());
 //    	System.out.println("things length = " + habThingsStart.length);
 
     	// Loop through list of "Things"
@@ -433,7 +435,8 @@ public class OpenHabDriver extends AbstractSensorModule<OpenHabConfig>
     			// Loop through each "Item" linked to each "Channel"
     			for (int kkk = 0; kkk < habThingsStart[k].getChannels()[kk].getLinkedItems().length; kkk++)
     			{
-    				OpenHabItems habItemsStart = itemsHandler.getItemsFromJSON(getHostURL() + "/items/" + habThingsStart[k].getChannels()[kk].getLinkedItems()[kkk]);
+    				OpenHabItems habItemsStart =
+							itemsHandler.getItemsFromJSON(getHostURL() + "/items/" + habThingsStart[k].getChannels()[kk].getLinkedItems()[kkk], getUrlCredentials());
 //    				System.out.println("habItem: " + habItemsStart.getName());
     				switch (habThingsStart[k].getChannels()[kk].getChannelTypeUID())
     				{
@@ -543,8 +546,8 @@ public class OpenHabDriver extends AbstractSensorModule<OpenHabConfig>
     					habEnviroOut.postEnviroData(habThingsStart[k], habItemsStart);
     					habStatusOut.postStatusData(habThingsStart[k], kk, habItemsStart);
     					
-    					if (!habItemsStart.getState().equalsIgnoreCase("NULL") && (Double.parseDouble(habItemsStart.getState()) < 18.0 || Double.parseDouble(habItemsStart.getState()) > 20.0))
-    						habAlertOut.postAlertData(habThingsStart[k], habItemsStart, "Temp is " + Double.parseDouble(habItemsStart.getState()) + "\u00b0" + "C!");
+    					if (!habItemsStart.getState().equalsIgnoreCase("NULL") && (Double.parseDouble(habItemsStart.getState().substring(0, habItemsStart.getState().length() -3)) < 18.0 || Double.parseDouble(habItemsStart.getState().substring(0, habItemsStart.getState().length() -3)) > 20.0))
+    						habAlertOut.postAlertData(habThingsStart[k], habItemsStart, "Temp is " + habItemsStart.getState() + "°" + "C!");
     					break;
 
     				case "zwave:sensor_ultraviolet":
@@ -699,11 +702,15 @@ public class OpenHabDriver extends AbstractSensorModule<OpenHabConfig>
     }
 
 
-    protected String getHostURL()
+    protected String 		getHostURL()
     {
     	return hostURL;
     }
 
+	protected String getUrlCredentials()
+	{
+		return urlCredentials;
+	}
 
     public double getAverageSamplingPeriod() {
     	return 5.0;

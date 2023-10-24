@@ -17,7 +17,7 @@ public class OpenHabUVOutput extends AbstractSensorOutput<OpenHabDriver>
 	DataBlock uvBlock;
 	
 	public OpenHabUVOutput(OpenHabDriver parentSensor) {
-		super(parentSensor);
+		super(parentSensor.getName(),  parentSensor);
 	}
 	
 	@Override
@@ -45,7 +45,13 @@ public class OpenHabUVOutput extends AbstractSensorOutput<OpenHabDriver>
     	uvComp.addComponent("ultravioletIndex", sweHabUV.getUVISWE()); // dataRecord(2)
     	uvComp.addComponent("locationLLA", sweHabUV.getLocVecSWE()); // dataRecord(3, 4, 5)
     	uvComp.addComponent("locationDesc", sweHabUV.getLocDescSWE()); // dataRecord(6)
-    }
+
+		// also generate encoding definition
+		uvEncoding = sweHelpUV.newTextEncoding(",", "\n");
+
+	}
+
+
     
     
     protected void postUVData(OpenHabThings uvThing, OpenHabItems uvItem)
@@ -57,8 +63,9 @@ public class OpenHabUVOutput extends AbstractSensorOutput<OpenHabDriver>
     	double lat = Double.NaN;
     	double lon = Double.NaN;
     	double alt = Double.NaN;
-    	String locDesc = (uvThing.getLocation().isEmpty()) ? "undeclared" : uvThing.getLocation();
-    	
+//    	String locDesc = (uvThing.getLocation().isEmpty()) ? "undeclared" : uvThing.getLocation();
+    	String locDesc = uvThing.getLocation();
+
     	if (!uvItem.getState().equalsIgnoreCase("NULL"))
     		uvi = Double.parseDouble(uvItem.getState());
 

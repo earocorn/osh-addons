@@ -17,7 +17,7 @@ public class OpenHabAlarmEntryOutput extends AbstractSensorOutput<OpenHabDriver>
 	DataBlock entBlock;
 	
 	public OpenHabAlarmEntryOutput(OpenHabDriver parentSensor) {
-		super(parentSensor);
+		super(parentSensor.getName(), parentSensor);
 	}
 	
 	@Override
@@ -56,7 +56,8 @@ public class OpenHabAlarmEntryOutput extends AbstractSensorOutput<OpenHabDriver>
     	double lat = Double.NaN;
     	double lon = Double.NaN;
     	double alt = Double.NaN;
-    	String locDesc = (entThing.getLocation().isEmpty()) ? "undeclared" : entThing.getLocation();
+//    	String locDesc = (entThing.getLocation().isEmpty()) ? "undeclared" : entThing.getLocation();
+		String locDesc = entThing.getLocation();
 
     	// build and publish databook
     	DataBlock dataBlock = entComp.createDataBlock();

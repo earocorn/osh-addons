@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.net.URLConnection;
+import java.util.Base64;
 import java.util.List;
 
 import org.sensorhub.api.common.SensorHubException;
@@ -13,12 +15,12 @@ import com.google.gson.annotations.SerializedName;
 
 public class OpenHabHandler
 {	
-	public OpenHabItems getItemsFromJSON(String jsonURLfromDriver) throws SensorHubException
+	public OpenHabItems getItemsFromJSON(String jsonURLfromDriver, String urlCredentials) throws SensorHubException
 	{
 		String jsonL = null;
 		try
 		{
-			jsonL = getOpenHabInfo(jsonURLfromDriver);
+			jsonL = getOpenHabInfo(jsonURLfromDriver, urlCredentials);
 		}
 		catch (IOException e)
 		{
@@ -30,12 +32,12 @@ public class OpenHabHandler
 		return habItems;
 	}
 	
-	public OpenHabThings[] getThingsFromJSON(String jsonURLfromDriver) throws SensorHubException
+	public OpenHabThings[] getThingsFromJSON(String jsonURLfromDriver, String urlCredentials) throws SensorHubException
 	{
 		String jsonL = null;
 		try
 		{
-			jsonL = getOpenHabInfo(jsonURLfromDriver);
+			jsonL = getOpenHabInfo(jsonURLfromDriver, urlCredentials);
 		}
 		catch (IOException e)
 		{
@@ -47,14 +49,18 @@ public class OpenHabHandler
 		return habThings;
 	}
 	
-	public String getOpenHabInfo(String jsonURL)  throws IOException
+	public String getOpenHabInfo(String jsonURL, String urlCredentials)  throws IOException
 	{
-    	URL urlGetDevices = new URL(jsonURL);
+		URL urlGetDevices = new URL(jsonURL);
+		URLConnection uc = urlGetDevices.openConnection();
+		String basicAuth = "Basic " + new String(Base64.getEncoder().encode(urlCredentials.getBytes()));
+		uc.setRequestProperty ("Authorization", basicAuth);
 //    	System.out.println();
 //    	System.out.println("Issuing request: " + urlGetDevices);
 //    	System.out.println();
-    	InputStream isGetDevices = urlGetDevices.openStream();
+    	InputStream isGetDevices = uc.getInputStream();;
     	BufferedReader reader = null;
+
     	try
     	{
     		reader = new BufferedReader(new InputStreamReader(isGetDevices));

@@ -17,7 +17,7 @@ public class OpenHabAlarmBurglarOutput extends AbstractSensorOutput<OpenHabDrive
 	DataBlock burgBlock;
 	
 	public OpenHabAlarmBurglarOutput(OpenHabDriver parentSensor) {
-		super(parentSensor);
+		super(parentSensor.getName(), parentSensor);
 	}
 	
 	@Override
@@ -56,7 +56,8 @@ public class OpenHabAlarmBurglarOutput extends AbstractSensorOutput<OpenHabDrive
     	double lat = Double.NaN;
     	double lon = Double.NaN;
     	double alt = Double.NaN;
-    	String locDesc = (burgThing.getLocation().isEmpty()) ? "undeclared" : burgThing.getLocation();
+//    	String locDesc = (burgThing.getLocation().isEmpty()) ? "undeclared" : burgThing.getLocation();
+		String locDesc = burgThing.getLocation();
 
     	// build and publish databook
     	DataBlock dataBlock = burgComp.createDataBlock();

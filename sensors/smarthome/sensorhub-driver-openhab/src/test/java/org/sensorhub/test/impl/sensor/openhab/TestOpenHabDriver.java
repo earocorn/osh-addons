@@ -13,7 +13,7 @@ import org.junit.Test;
 import org.sensorhub.api.event.Event;
 import org.sensorhub.api.event.IEventListener;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.data.IStreamingControlInterface;
+import org.sensorhub.api.command.IStreamingControlInterface;
 import org.sensorhub.api.data.IStreamingDataInterface;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.openhab.OpenHabConfig;

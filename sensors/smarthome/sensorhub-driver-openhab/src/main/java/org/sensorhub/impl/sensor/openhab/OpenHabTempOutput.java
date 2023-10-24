@@ -17,7 +17,7 @@ public class OpenHabTempOutput extends AbstractSensorOutput<OpenHabDriver>
 	DataBlock tempBlock;
 	
 	public OpenHabTempOutput(OpenHabDriver parentSensor) {
-		super(parentSensor);
+		super(parentSensor.getName(), parentSensor);
 	}
 	
 	@Override
@@ -57,10 +57,12 @@ public class OpenHabTempOutput extends AbstractSensorOutput<OpenHabDriver>
     	double lat = Double.NaN;
     	double lon = Double.NaN;
     	double alt = Double.NaN;
-    	String locDesc = (tempThing.getLocation().isEmpty()) ? "undeclared" : tempThing.getLocation();
+//    	String locDesc = (tempThing.getLocation().isEmpty()) ? "undeclared" : tempThing.getLocation();
+		String locDesc = tempThing.getLocation();
 
     	if (!tempItem.getState().equalsIgnoreCase("NULL"))
-    		temp = Float.parseFloat(tempItem.getState());
+    		temp = Float.parseFloat(tempItem.getState().substring(0, tempItem.getState().length()-3));
+
     	
     	// build and publish databook
     	DataBlock dataBlock = tempComp.createDataBlock();

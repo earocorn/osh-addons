@@ -17,7 +17,7 @@ public class OpenHabBatteryOutput extends AbstractSensorOutput<OpenHabDriver>
 	DataBlock battBlock;
 	
 	public OpenHabBatteryOutput(OpenHabDriver parentSensor) {
-		super(parentSensor);
+		super(parentSensor.getName(), parentSensor);
 	}
 	
 	@Override
@@ -57,8 +57,9 @@ public class OpenHabBatteryOutput extends AbstractSensorOutput<OpenHabDriver>
     	double lat = Double.NaN;
     	double lon = Double.NaN;
     	double alt = Double.NaN;
-    	String locDesc = (battThing.getLocation().isEmpty()) ? "undeclared" : battThing.getLocation();
-    	
+//    	String locDesc = (battThing.getLocation().isEmpty()) ? "undeclared" : battThing.getLocation();
+    	String locDesc = battThing.getLocation();
+
     	if (!battItem.getState().equalsIgnoreCase("NULL"))
     		batt = Integer.parseInt(battItem.getState());
 

@@ -32,7 +32,7 @@ public class OpenHabMotionOutput extends AbstractSensorOutput<OpenHabDriver>
 	DataBlock motionBlock;
 	
 	public OpenHabMotionOutput(OpenHabDriver parentSensor) {
-		super(parentSensor);
+		super(parentSensor.getName(), parentSensor);
 	}
 	
 	@Override

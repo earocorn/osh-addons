@@ -17,7 +17,7 @@ public class OpenHabEnviroOutput extends AbstractSensorOutput<OpenHabDriver>
 	DataBlock enviroBlock;
 	
 	public OpenHabEnviroOutput(OpenHabDriver parentSensor) {
-		super(parentSensor);
+		super(parentSensor.getName(), parentSensor);
 	}
 	
 	@Override
@@ -57,7 +57,8 @@ public class OpenHabEnviroOutput extends AbstractSensorOutput<OpenHabDriver>
     	double lat = Double.NaN;
     	double lon = Double.NaN;
     	double alt = Double.NaN;
-    	String locDesc = (enviroThing.getLocation().isEmpty()) ? "undeclared" : enviroThing.getLocation();
+//    	String locDesc = (enviroThing.getLocation().isEmpty()) ? "undeclared" : enviroThing.getLocation();
+		String locDesc = enviroThing.getLocation();
 
     	// build and publish databook
     	DataBlock dataBlock = enviroComp.createDataBlock();

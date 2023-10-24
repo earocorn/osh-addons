@@ -1,0 +1,34 @@
+description = 'OpenHAB Driver'
+ext.details = 'Driver for z-wave network devices that have controller running OpenHAB'
+version = '0.0.1-SNAPSHOT'
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+}
+
+// exclude tests requiring connection to the sensor
+// these have to be run manually
+
+test {
+  exclude '**/TestOpenHabDriver.class'
+}
+
+// add info to OSGi manifest
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
+    attributes('Bundle-Activator': 'org.sensorhub.impl.sensor.openhab.Activator')
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'cardy'
+      name 'Cardy'
+      organization 'Botts Innovative Research, Inc.'
+      organizationUrl 'http://www.botts-inc.com'
+    }
+  }
+}

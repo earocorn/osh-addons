@@ -17,7 +17,7 @@ public class OpenHabSensorBinaryOutput extends AbstractSensorOutput<OpenHabDrive
 	DataBlock binBlock;
 	
 	public OpenHabSensorBinaryOutput(OpenHabDriver parentSensor) {
-		super(parentSensor);
+		super(parentSensor.getName(), parentSensor);
 	}
 	
 	@Override
@@ -56,7 +56,8 @@ public class OpenHabSensorBinaryOutput extends AbstractSensorOutput<OpenHabDrive
     	double lat = Double.NaN;
     	double lon = Double.NaN;
     	double alt = Double.NaN;
-    	String locDesc = (binThing.getLocation().isEmpty()) ? "undeclared" : binThing.getLocation();
+//    	String locDesc = (binThing.getLocation().isEmpty()) ? "undeclared" : binThing.getLocation();
+		String locDesc = binThing.getLocation();
 
     	// build and publish databook
     	DataBlock dataBlock = binComp.createDataBlock();

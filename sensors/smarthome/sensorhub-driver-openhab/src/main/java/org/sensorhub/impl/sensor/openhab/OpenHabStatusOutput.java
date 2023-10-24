@@ -17,7 +17,7 @@ public class OpenHabStatusOutput extends AbstractSensorOutput<OpenHabDriver>
 	DataBlock statusBlock;
 	
 	public OpenHabStatusOutput(OpenHabDriver parentSensor) {
-		super(parentSensor);
+		super(parentSensor.getName(), parentSensor);
 	}
 	
 	@Override
@@ -54,12 +54,14 @@ public class OpenHabStatusOutput extends AbstractSensorOutput<OpenHabDriver>
     protected void postStatusData(OpenHabThings statusThing, int kk, OpenHabItems statusItem)
     {
 //    	System.out.println("posting Status data for " + statusItem.getName());
-    	
+
     	double time = System.currentTimeMillis() / 1000.;
     	double lat = Double.NaN;
     	double lon = Double.NaN;
     	double alt = Double.NaN;
-    	String locDesc = (statusThing.getLocation().isEmpty()) ? "undeclared" : statusThing.getLocation();
+
+//		String locDesc = (statusThing.getLocation().isEmpty()) ? "undeclared" : statusThing.getLocation();
+		String locDesc = statusThing.getLocation();
 
     	// build and publish databook
     	DataBlock dataBlock = statusComp.createDataBlock();

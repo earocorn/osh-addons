@@ -17,7 +17,7 @@ public class OpenHabLumOutput extends AbstractSensorOutput<OpenHabDriver>
 	DataBlock lumBlock;
 	
 	public OpenHabLumOutput(OpenHabDriver parentSensor) {
-		super(parentSensor);
+		super(parentSensor.getName(), parentSensor);
 	}
 	
 	@Override
@@ -57,8 +57,9 @@ public class OpenHabLumOutput extends AbstractSensorOutput<OpenHabDriver>
     	double lat = Double.NaN;
     	double lon = Double.NaN;
     	double alt = Double.NaN;
-    	String locDesc = (lumThing.getLocation().isEmpty()) ? "undeclared" : lumThing.getLocation();
-    	
+//    	String locDesc = (lumThing.getLocation().isEmpty()) ? "undeclared" : lumThing.getLocation();
+    	String locDesc = lumThing.getLocation();
+
     	if (!lumItem.getState().equalsIgnoreCase("NULL"))
     		lum = Float.parseFloat(lumItem.getState());
 

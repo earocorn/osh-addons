@@ -3,8 +3,8 @@ package org.sensorhub.impl.sensor.openhab;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import org.sensorhub.api.common.CommandStatus;
-import org.sensorhub.api.common.CommandStatus.StatusCode;
+
+import org.sensorhub.api.command.CommandException;
 import org.sensorhub.api.sensor.SensorException;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
 import org.vast.data.DataChoiceImpl;
@@ -22,7 +22,7 @@ public class OpenHabDimmerControl extends AbstractSensorControl<OpenHabDriver>
 
 	public OpenHabDimmerControl(OpenHabDriver driver)
 	{
-		super(driver);
+		super(driver.getName(), driver);
 	}
 
 	
@@ -70,7 +70,7 @@ public class OpenHabDimmerControl extends AbstractSensorControl<OpenHabDriver>
 	
     
     @Override
-	public CommandStatus execCommand(DataBlock command) throws SensorException {
+	public boolean execCommand(DataBlock command) throws CommandException {
     	
     	// associate command data to msg structure definition
         DataChoice commandMsg = (DataChoice) commandData.copy();
@@ -118,13 +118,11 @@ public class OpenHabDimmerControl extends AbstractSensorControl<OpenHabDriver>
 		}
         catch (Exception e)
         {
-        	throw new SensorException("Error sending command", e);
+        	throw new CommandException("Error sending command", e);
 		}
+
         
-        CommandStatus cmdStatus = new CommandStatus();
-        cmdStatus.status = StatusCode.COMPLETED;    
-        
-        return cmdStatus;
+        return false;
 	}
     
     

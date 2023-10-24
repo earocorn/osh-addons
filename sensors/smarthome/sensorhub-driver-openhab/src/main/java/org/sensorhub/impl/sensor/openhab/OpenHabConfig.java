@@ -32,9 +32,13 @@ public class OpenHabConfig extends SensorConfig
     
     public OpenHabConfig() throws IOException
     {
-        http.user = "botts";
-        http.password = "t3a42or24t3a";
-        http.remoteHost = "192.168.0.22";
+//        http.user = "botts";
+//        http.password = "t3a42or24t3a";
+//        http.remoteHost = "192.168.0.22";
+
+        http.user = "bottsinc";
+        http.password = "eu.7LAY33#wGKLR";
+        http.remoteHost = "192.168.1.176";
         
 //        http.user = "MOTOROLA-7FFBC";
 //        http.password = "db0e10daa990751ddf0c";

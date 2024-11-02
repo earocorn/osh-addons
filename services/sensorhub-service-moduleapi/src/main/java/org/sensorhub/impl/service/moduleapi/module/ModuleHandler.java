@@ -53,6 +53,22 @@ public class ModuleHandler extends BaseHandler {
 
     @Override
     public void doGet(RequestContext ctx) throws InvalidRequestException, IOException, SecurityException {
+        ModuleBindingJson binding = new ModuleBindingJson(ctx, null, true);
+
+        if (ctx.isEndOfPath())
+        {
+            list(ctx);
+            return;
+        }
+
+        // otherwise there should be a specific collection ID
+        String id = ctx.popNextPathElt();
+        if (ctx.isEndOfPath())
+        {
+            getById(ctx, id);
+            return;
+        }
+
         // return all modules
         System.out.println("Loaded modules: ");
         for(var i : loadedModules) {
@@ -71,6 +87,14 @@ public class ModuleHandler extends BaseHandler {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    private void list(RequestContext ctx) {
+        // list all module configs
+    }
+
+    private void getById(RequestContext ctx, String id) {
+        // get module config by id
     }
 
     @Override

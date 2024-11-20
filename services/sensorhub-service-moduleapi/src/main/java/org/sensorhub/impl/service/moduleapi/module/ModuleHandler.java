@@ -6,6 +6,7 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.module.IModule;
+import org.sensorhub.api.module.IModuleManager;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.impl.datastore.DataStoreFiltersTypeAdapterFactory;
@@ -28,10 +29,9 @@ public class ModuleHandler extends BaseHandler {
 
     public static final String[] NAMES = { "modules" };
 
-    ModuleRegistry registry;
     Collection<IModule<?>> loadedModules;
     HashMap<String, IModuleProvider> availableModuleTypes;
-    Gson gson;
+
 
     public ModuleHandler(ModuleRegistry registry) {
         this.registry = registry;

@@ -1,11 +1,14 @@
 package org.sensorhub.impl.service.moduleapi.module;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import org.sensorhub.api.ISensorHub;
 import org.sensorhub.api.common.IdEncoders;
 import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleManager;
 import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.api.module.ModuleEvent;
@@ -49,6 +52,10 @@ public class ModuleBindingJson extends ResourceBindingJson<String, ModuleConfig>
         return gson.fromJson(reader, ModuleConfig.class);
     }
 
+    public ModuleConfig deserialize() {
+        return deserialize(reader);
+    }
+
     @Override
     public void serialize(String key, ModuleConfig res, boolean showLinks, JsonWriter writer) throws IOException {
         /*
@@ -62,17 +69,29 @@ public class ModuleBindingJson extends ResourceBindingJson<String, ModuleConfig>
             state: "STARTED"
         }
          */
-        try{
-            writer.beginObject();
-            writer.name("config").value(gson.toJson(res));
-
+        try {
             var module = this.registry.getModuleById(res.id);
+            writer.beginObject();
+            writer.name("id").value(module.getConfiguration().id);
+            writer.name("name").value(module.getConfiguration().name);
+            writer.name("description").value(module.getConfiguration().description);
             writer.name("state").value(module.getCurrentState().name());
-            writer.name("statusMessage").value(module.getStatusMessage());
-            writer.name("latestError").value(module.getCurrentError().getMessage());
+            writer.name("statusMessage").value(module.getStatusMessage() != null ? module.getStatusMessage() : "NONE");
+            writer.name("latestError").value(module.getCurrentError() != null ? module.getCurrentError().getMessage() : "NONE");
+            writer.endObject();
+            writer.flush();
         } catch (SensorHubException e) {
-            throw new IOException(e);
+            throw new RuntimeException(e);
         }
+    }
+
+    public void serialize(ModuleConfig module) throws IOException {
+        serialize(null, module, false, writer);
+    }
+
+    public void serializeConfig(ModuleConfig config) throws IOException {
+        gson.toJson(config, ModuleConfig.class, writer);
+        writer.flush();
     }
 
     @Override
@@ -83,5 +102,9 @@ public class ModuleBindingJson extends ResourceBindingJson<String, ModuleConfig>
     @Override
     public void endCollection(Collection<ResourceLink> links) throws IOException {
         endJsonCollection(writer, null);
+    }
+
+    public void endCollection() throws IOException {
+        endCollection(null);
     }
 }

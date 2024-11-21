@@ -4,11 +4,15 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.module.IModule;
 import org.sensorhub.api.module.IModuleManager;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.api.processing.IProcessModule;
+import org.sensorhub.api.sensor.ISensorModule;
 import org.sensorhub.impl.datastore.DataStoreFiltersTypeAdapterFactory;
 import org.sensorhub.impl.module.ModuleConfigJsonFile;
 import org.sensorhub.impl.module.ModuleRegistry;
@@ -31,7 +35,7 @@ public class ModuleHandler extends BaseHandler {
 
     Collection<IModule<?>> loadedModules;
     HashMap<String, IModuleProvider> availableModuleTypes;
-
+    ModuleRegistry registry;
 
     public ModuleHandler(ModuleRegistry registry) {
         this.registry = registry;
@@ -39,22 +43,23 @@ public class ModuleHandler extends BaseHandler {
         var installedModules = registry.getInstalledModuleTypes();
         this.availableModuleTypes = new HashMap<>();
         for(var i : installedModules) {
+            var moduleName = i.getModuleName();
+            var moduleClass = i.getModuleClass();
+            var moduleVersion = i.getModuleVersion();
+            var config = i.getModuleConfigClass();
+            var className = moduleClass.getName();
+            var module = moduleClass.getModule();
+            var configFields = config.getFields();
             availableModuleTypes.put(i.getModuleName(), i);
         }
+    }
 
-        ModuleConfigUtil moduleConfigUtil = new ModuleConfigUtil();
-        gson = moduleConfigUtil.gson;
+    private ModuleBindingJson getBinding(RequestContext ctx, boolean forReading) throws IOException {
+        return new ModuleBindingJson(ctx, null, forReading, this.registry);
     }
 
     @Override
-    public String[] getNames() {
-        return NAMES;
-    }
-
-    @Override
-    public void doGet(RequestContext ctx) throws InvalidRequestException, IOException, SecurityException {
-        ModuleBindingJson binding = new ModuleBindingJson(ctx, null, true);
-
+    public void doGet(RequestContext ctx) throws IOException, SecurityException {
         if (ctx.isEndOfPath())
         {
             list(ctx);
@@ -65,85 +70,59 @@ public class ModuleHandler extends BaseHandler {
         String id = ctx.popNextPathElt();
         if (ctx.isEndOfPath())
         {
-            getById(ctx, id);
-            return;
-        }
-
-        // return all modules
-        System.out.println("Loaded modules: ");
-        for(var i : loadedModules) {
-            System.out.println(i.getName());
-        }
-
-        System.out.println("\nInstalled Modules: ");
-        for(var i : availableModuleTypes.values()) {
-            System.out.println(i.getModuleName() + "\n");
             try {
-                var clazz = i.getModuleConfigClass().getDeclaredConstructor().newInstance();
-                for(var field : clazz.getClass().getDeclaredFields()) {
-                    System.out.println(field.getName());
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+                getById(ctx, id);
+            } catch (SensorHubException e) {
+                throw new InvalidRequestException(InvalidRequestException.ErrorCode.NOT_FOUND, "The requested module could not be found");
             }
         }
     }
 
-    private void list(RequestContext ctx) {
-        // list all module configs
+    private void list(RequestContext ctx) throws IOException {
+        var binding = getBinding(ctx, false);
+        binding.startCollection();
+        for(IModule<?> module : this.registry.getLoadedModules()) {
+            // TODO: Take these from service configuration
+            if(module instanceof ISensorModule<?> || module instanceof IProcessModule)
+                binding.serialize(module.getConfiguration());
+        }
+        binding.endCollection();
     }
 
-    private void getById(RequestContext ctx, String id) {
+    private void getById(RequestContext ctx, String id) throws SensorHubException, IOException {
         // get module config by id
+        var binding = getBinding(ctx, false);
+        IModule<?> module = this.registry.getModuleById(id);
+        if(module == null)
+            throw new SensorHubException("Module not found");
+        binding.serialize(module.getConfiguration());
     }
 
     @Override
     public void doPost(RequestContext ctx) throws InvalidRequestException, IOException, SecurityException {
         // add new module
-        InputStream is = new BufferedInputStream(ctx.getInputStream());
-        var reader = new JsonReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-        reader.beginObject();
-        String driverField = reader.nextName();
-        String driverValue = reader.nextString();
+        var binding = getBinding(ctx, true);
 
-        if(!driverField.equals("driverName"))
-            throw ServiceErrors.invalidPayload("Must specify a driver name");
-
-        if(availableModuleTypes.get(driverValue) == null)
-            throw ServiceErrors.notFound(driverValue);
-
-        System.out.println("Found module with name: " + driverValue);
-
-        String configField = reader.nextName();
-
-        if(!configField.equals("config"))
-            throw ServiceErrors.invalidPayload("Must specify a configuration for " + driverValue);
-
-        ModuleConfig moduleConfig = gson.fromJson(reader, ModuleConfig.class);
+        ModuleConfig moduleConfig = binding.deserialize();
 
         if(moduleConfig == null)
-            throw ServiceErrors.notFound("config");
+            throw new InvalidRequestException(InvalidRequestException.ErrorCode.BAD_PAYLOAD, "A valid configuration must be specified");
 
-        var mod = registry.getLoadedModuleById(moduleConfig.id);
+        boolean isNew = !registry.isModuleLoaded(moduleConfig.id);
 
-        if(registry.isModuleLoaded(moduleConfig.id))
+        if(!isNew)
             throw ServiceErrors.requestRejected("Module already loaded");
 
+        IModule<?> newModule = null;
+
         try {
-            registry.loadModule(moduleConfig);
+            // TODO: If module fails to load, send error response and delete it from node/config
+            newModule = registry.loadModule(moduleConfig);
         } catch (Exception e) {
             throw ServiceErrors.badRequest(e.getMessage());
         }
 
-//        try {
-////            Thread.sleep(500);
-//            registry.destroyModule(moduleConfig.id);
-//            System.out.println("Destroyed problematic module");
-//        } catch (Exception ex) {
-//            throw new RuntimeException(ex);
-//        }
-
-        if(mod != null)
+        if(newModule != null)
             System.out.println("Loaded module: " + moduleConfig.id);
     }
 
@@ -155,6 +134,11 @@ public class ModuleHandler extends BaseHandler {
     @Override
     public void doDelete(RequestContext ctx) throws InvalidRequestException, IOException, SecurityException {
         // remove module
+    }
+
+    @Override
+    public String[] getNames() {
+        return NAMES;
     }
 
 }

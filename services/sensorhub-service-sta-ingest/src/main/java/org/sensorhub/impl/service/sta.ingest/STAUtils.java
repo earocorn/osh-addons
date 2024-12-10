@@ -65,7 +65,7 @@ public class STAUtils {
 
     public AbstractProcess toSmlProcess(Sensor sensor)
     {
-        String uid = tempUidPrefix + SWEDataUtils.toNCName(sensor.getName()) + ":" + sensor.getId();
+        String uid = /*tempUidPrefix + */SWEDataUtils.toNCName(sensor.getName()) + ":" + sensor.getId();
 
         var sys = new SMLHelper().createPhysicalSystem()
                 .uniqueID(uid)

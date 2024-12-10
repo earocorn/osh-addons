@@ -22,6 +22,7 @@ import org.sensorhub.impl.module.AbstractModule;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.Instant;
 
 
 /**
@@ -60,6 +61,8 @@ public class STAIngestService extends AbstractModule<STAIngestConfig>
 
         // TODO: Ingest Datastreams, Things, Sensors, Observations, ObservedProperties. Store in writeDb
 
+        Instant now = Instant.now();
+
         for (String urlString : config.staBaseResourcePathList)
         {
             try
@@ -70,6 +73,9 @@ public class STAIngestService extends AbstractModule<STAIngestConfig>
                 throw new SensorHubException("URL " + urlString + " is not a valid URL", e);
             }
         }
+
+        long elapsed = Instant.now().minusMillis(now.toEpochMilli()).toEpochMilli();
+        reportStatus("Ingestion completed in " + elapsed + "ms");
 
         setState(ModuleState.STARTED);
     }

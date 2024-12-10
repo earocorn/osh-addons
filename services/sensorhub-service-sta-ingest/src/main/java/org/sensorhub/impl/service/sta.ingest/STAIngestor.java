@@ -33,21 +33,21 @@ public class STAIngestor {
 
         try
         {
-            EntityList<Thing> things = sta.things().query().list();
-            for (Thing thing : things) {
-//                System.out.println("Thing " + thing.getName());
-
-                var datastreams = thing.datastreams().query().list();
-                for (Datastream datastream : datastreams) {
-                    System.out.println("Datastream " + datastream.getName() + " has observed property " + datastream.getObservedProperty().getName());
-                }
-            }
+//            EntityList<Thing> things = sta.things().query().list();
+//            for (Thing thing : things) {
+////                System.out.println("Thing " + thing.getName());
+//
+//                var datastreams = thing.datastreams().query().list();
+//                for (Datastream datastream : datastreams) {
+//                    System.out.println("Datastream " + datastream.getName() + " has observed property " + datastream.getObservedProperty().getName());
+//                }
+//            }
 
             EntityList<Sensor> sensors = sta.sensors().query().list();
             for (Sensor sensor : sensors) {
-                System.out.println("\nSensor " + sensor.getName());
-                System.out.println("id " + sensor.getId());
-                System.out.println("desc " + sensor.getDescription());
+//                System.out.println("\nSensor " + sensor.getName());
+//                System.out.println("id " + sensor.getId());
+//                System.out.println("desc " + sensor.getDescription());
 
                 var system = staUtils.toSystem(sensor);
                 var sysId = writeDb.getSystemDescStore().add(system);
@@ -60,7 +60,7 @@ public class STAIngestor {
                         var foiId = writeDb.getFoiStore().add(staUtils.toGmlFeature(observation.getFeatureOfInterest(), system.getId()));
                         writeDb.getObservationStore().add(staUtils.toObsData(observation, dsId.getInternalID(), foiId.getInternalID()));
                     }
-                    System.out.println("Datastream " + datastream.getName());
+//                    System.out.println("Datastream " + datastream.getName());
                 }
             }
 

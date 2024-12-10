@@ -23,6 +23,7 @@ import org.sensorhub.api.module.ModuleEvent.ModuleState;
 import org.sensorhub.api.service.IServiceModule;
 import org.sensorhub.impl.service.AbstractHttpServiceModule;
 import org.sensorhub.impl.service.moduleapi.home.HomePageHandler;
+import org.sensorhub.impl.service.moduleapi.module.ControlHandler;
 import org.sensorhub.impl.service.moduleapi.module.ModuleHandler;
 import org.sensorhub.impl.service.sweapi.ObsSystemDbWrapper;
 import org.sensorhub.impl.service.sweapi.RestApiService;
@@ -77,9 +78,13 @@ public class ModuleApiService extends AbstractHttpServiceModule<ModuleApiService
         // create resource handlers hierarchy
         var homePage = new HomePageHandler(config);
         var rootHandler = new RootHandler(homePage, false);
-        
-        var moduleHandler = new ModuleHandler(getParentHub().getModuleRegistry());
+        var registry = getParentHub().getModuleRegistry();
+
+        var moduleHandler = new ModuleHandler(registry);
         rootHandler.addSubResource(moduleHandler);
+
+        var controlHandler = new ControlHandler(registry);
+        moduleHandler.addSubResource(controlHandler);
         
         // deploy servlet
         servlet = new ModuleApiServlet(this, (ModuleApiSecurity) securityHandler, rootHandler, getLogger());

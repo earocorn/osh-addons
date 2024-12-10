@@ -127,13 +127,13 @@ public class ModuleHandler extends BaseHandler {
     }
 
     @Override
-    public void doPut(RequestContext ctx) throws InvalidRequestException, IOException, SecurityException {
-        // update module config
+    public void doPut(RequestContext ctx) throws SecurityException, InvalidRequestException {
+        throw ServiceErrors.unsupportedOperation("");
     }
 
     @Override
-    public void doDelete(RequestContext ctx) throws InvalidRequestException, IOException, SecurityException {
-        // remove module
+    public void doDelete(RequestContext ctx) throws IOException, SecurityException {
+        // TODO: Stop and remove module and associations
     }
 
     @Override

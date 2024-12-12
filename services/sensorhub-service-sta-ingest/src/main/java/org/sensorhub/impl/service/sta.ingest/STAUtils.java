@@ -37,9 +37,11 @@ import org.vast.sensorML.SMLHelper;
 import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
+import org.vast.swe.SWEUtils;
 import org.vast.util.Asserts;
 
 import javax.xml.namespace.QName;
+import java.net.URI;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -56,11 +58,6 @@ public class STAUtils {
     public STAUtils()
     {
         fac = new SWEHelper();
-    }
-
-    public ISystemWithDesc toSystem(Sensor sensor)
-    {
-        return new SystemWrapper(toSmlProcess(sensor));
     }
 
     public AbstractProcess toSmlProcess(Sensor sensor)
@@ -84,6 +81,20 @@ public class STAUtils {
             docList.addDocument(doc);
             sys.getDocumentationList().add("sta_metadata", docList);
         }
+
+        return sys;
+    }
+
+    public AbstractProcess toSmlProcess(Thing thing)
+    {
+        String uid = /*tempUidPrefix + */SWEDataUtils.toNCName(thing.getName()) + ":" + thing.getId();
+
+        var sys = new SMLHelper().createPhysicalSystem()
+                .uniqueID(uid)
+                .name(thing.getName())
+                .description(thing.getDescription())
+                .validFrom(OffsetDateTime.now())
+                .build();
 
         return sys;
     }
@@ -141,13 +152,20 @@ public class STAUtils {
         else if (IObservation.OBS_TYPE_RECORD.equals(obsType))
             comp = fac.createRecord();
 
+        var definition = obsProp.getDefinition();
+        try {
+            URI.create(definition);
+        } catch (IllegalArgumentException e) {
+            definition = SWEHelper.getPropertyUri(definition.replace(" ", ""));
+        }
+
         if (comp != null)
         {
             return comp.id(obsProp.getId().toString())
                     .name(SWEDataUtils.toNCName(obsProp.getName()))
                     .label(obsProp.getName())
                     .description(obsProp.getDescription())
-                    .definition(obsProp.getDefinition())
+                    .definition(definition)
                     .build();
         }
 
@@ -156,11 +174,11 @@ public class STAUtils {
 
     public ObsData toObsData(Observation obs, BigId dsId, BigId foiId)
     {
-        Instant phenomenonTime = Instant.parse(obs.getPhenomenonTime().toString()).truncatedTo(ChronoUnit.MILLIS);
+        Instant phenomenonTime = obs.getPhenomenonTime().getAsDateTime().toInstant().truncatedTo(ChronoUnit.MILLIS);
 
         Instant resultTime = null;
         if(obs.getResult() != null)
-            resultTime = Instant.parse(obs.getResult().toString()).truncatedTo(ChronoUnit.MILLIS);
+            resultTime = obs.getResultTime().toInstant().truncatedTo(ChronoUnit.MILLIS);
 
         DataBlock dataBlock = createDataBlock(phenomenonTime, obs.getResult());
 
@@ -214,7 +232,10 @@ public class STAUtils {
         }
         else if (val instanceof String)
         {
-            dataBlock = new DataBlockString();
+            if(((String) val).isEmpty())
+                dataBlock = new DataBlockString(1);
+            else
+                dataBlock = new DataBlockString(((String) val).length());
             dataBlock.setStringValue((String)val);
         }
         else if (val instanceof ArrayList)

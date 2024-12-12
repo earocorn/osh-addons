@@ -15,14 +15,20 @@ Copyright (C) 2024 Botts Innovative Research, Inc. All Rights Reserved.
 package org.sensorhub.impl.service.sta.ingest;
 
 import com.google.common.base.Strings;
+import de.fraunhofer.iosb.ilt.sta.MqttException;
+import de.fraunhofer.iosb.ilt.sta.service.MqttConfig;
+import org.eclipse.paho.client.mqttv3.MqttClientPersistence;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.database.IObsSystemDatabase;
+import org.sensorhub.api.event.IEventBus;
 import org.sensorhub.api.module.ModuleEvent.ModuleState;
 import org.sensorhub.impl.module.AbstractModule;
+import org.sensorhub.impl.system.SystemDatabaseTransactionHandler;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Instant;
+import java.util.Objects;
 
 
 /**
@@ -36,17 +42,19 @@ import java.time.Instant;
 public class STAIngestService extends AbstractModule<STAIngestConfig>
 {
 
+    IEventBus eventBus;
+    SystemDatabaseTransactionHandler transactionHandler;
+    IObsSystemDatabase writeDb;
+
     @Override
     public void setConfiguration(STAIngestConfig config)
     {
         super.setConfiguration(config);
     }
 
-
     @Override
-    protected void doStart() throws SensorHubException
-    {
-        IObsSystemDatabase writeDb;
+    protected void doInit() throws SensorHubException {
+        super.doInit();
 
         // Get obs database to store ingested data
         if (!Strings.isNullOrEmpty(config.databaseID))
@@ -58,28 +66,46 @@ public class STAIngestService extends AbstractModule<STAIngestConfig>
         else
             writeDb = getParentHub().getSystemDriverRegistry().getSystemStateDatabase();
 
+        eventBus = getParentHub().getEventBus();
+        transactionHandler = new SystemDatabaseTransactionHandler(eventBus, writeDb);
+        // TODO: Move stuff here
+    }
 
+    @Override
+    protected void doStart() throws SensorHubException
+    {
         // TODO: Ingest Datastreams, Things, Sensors, Observations, ObservedProperties. Store in writeDb
 
-        Instant now = Instant.now();
+        reportStatus("Starting ingestion of " + config.staBaseResourcePathList.size() + " URL(s)...");
 
-        for (String urlString : config.staBaseResourcePathList)
-        {
-            try
-            {
-                URL url = new URL(urlString);
-                STAIngestor staIngestor = new STAIngestor(url, writeDb);
-            } catch (MalformedURLException e) {
-                throw new SensorHubException("URL " + urlString + " is not a valid URL", e);
-            }
+        try {
+            startThreads();
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
         }
-
-        long elapsed = Instant.now().minusMillis(now.toEpochMilli()).toEpochMilli();
-        reportStatus("Ingestion completed in " + elapsed + "ms");
 
         setState(ModuleState.STARTED);
     }
 
+    private void startThreads() throws MalformedURLException {
+        for (String urlString : config.staBaseResourcePathList)
+        {
+                URL url = new URL(urlString);
+                Thread ingestThread = new Thread(() -> {
+                    try {
+                        Instant now = Instant.now();
+                        MqttConfig mqttConfig = config.mqttUri == null ? null : new MqttConfig(config.mqttUri);
+                        STAIngestor ingestor = new STAIngestor(url, mqttConfig, Objects.equals(writeDb, getParentHub().getSystemDriverRegistry().getSystemStateDatabase()), transactionHandler);
+                        ingestor.ingest();
+                        long elapsed = Instant.now().minusMillis(now.toEpochMilli()).toEpochMilli();
+                        reportStatus("Ingestion completed in " + elapsed + "ms");
+                    } catch (MalformedURLException | MqttException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+                ingestThread.start();
+        }
+    }
 
     @Override
     protected void doStop()

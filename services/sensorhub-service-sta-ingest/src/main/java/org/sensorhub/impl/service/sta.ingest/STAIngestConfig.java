@@ -32,11 +32,14 @@ import java.util.List;
  */
 public class STAIngestConfig extends ServiceConfig
 {
-    @DisplayInfo(label="SensorThings API Base Resource Paths", desc="List of SensorThings API base URLs (i.e. https://www.example.com/datamodel/v1.0/")
+    @DisplayInfo(label="SensorThings API Base URLs", desc="List of SensorThings API base URLs (i.e. https://www.example.com/v1.0/")
     public List<String> staBaseResourcePathList = new ArrayList<>();
 
     @DisplayInfo.FieldType(DisplayInfo.FieldType.Type.MODULE_ID)
     @DisplayInfo.ModuleType(IObsSystemDatabase.class)
     @DisplayInfo(label = "Database ID", desc = "Database to store ingested data from SensorThings API. If none specified, only live observations will be available")
     public String databaseID = null;
+
+    @DisplayInfo(label = "MQTT URI", desc = "Server URI to make MQTT connections")
+    public String mqttUri = null;
 }

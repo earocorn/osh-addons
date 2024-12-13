@@ -177,7 +177,7 @@ public class STAUtils {
         Instant phenomenonTime = obs.getPhenomenonTime().getAsDateTime().toInstant().truncatedTo(ChronoUnit.MILLIS);
 
         Instant resultTime = null;
-        if(obs.getResult() != null)
+        if(obs.getResultTime() != null)
             resultTime = obs.getResultTime().toInstant().truncatedTo(ChronoUnit.MILLIS);
 
         DataBlock dataBlock = createDataBlock(phenomenonTime, obs.getResult());

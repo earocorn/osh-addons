@@ -51,7 +51,8 @@ import java.util.List;
 public class STAUtils {
 
     SWEHelper fac;
-    final String tempUidPrefix = "urn:osh:sta:";
+    final String thingUidPrefix = "urn:osh:sta:thing:";
+    final String sensorUidPrefix = "urn:osh:sta:sensor:";
     static final String GEOJSON_FORMAT = "application/vnd.geo+json";
     static final String UCUM_URI_PREFIX = "http://unitsofmeasure.org/ucum.html#";
 
@@ -60,9 +61,14 @@ public class STAUtils {
         fac = new SWEHelper();
     }
 
+    public String toUid(String name, Id<?> id)
+    {
+        return SWEDataUtils.toNCName(name + ":" + id);
+    }
+
     public AbstractProcess toSmlProcess(Sensor sensor)
     {
-        String uid = /*tempUidPrefix + */SWEDataUtils.toNCName(sensor.getName()) + ":" + sensor.getId();
+        String uid = sensorUidPrefix + toUid(sensor.getName(), sensor.getId());
 
         var sys = new SMLHelper().createPhysicalSystem()
                 .uniqueID(uid)
@@ -87,7 +93,7 @@ public class STAUtils {
 
     public AbstractProcess toSmlProcess(Thing thing)
     {
-        String uid = /*tempUidPrefix + */SWEDataUtils.toNCName(thing.getName()) + ":" + thing.getId();
+        String uid = thingUidPrefix + SWEDataUtils.toNCName(thing.getName()) + ":" + thing.getId();
 
         var sys = new SMLHelper().createPhysicalSystem()
                 .uniqueID(uid)
@@ -126,30 +132,41 @@ public class STAUtils {
                 obsProp,
                 ds.getUnitOfMeasurement());
 
-        rec.addField(comp.getName(), comp);
+        if(comp != null)
+            rec.addField(comp.getName(), comp);
 
         return rec.build();
     }
 
+    private boolean checkSillyDefinition(String definition, String sillyDefinition)
+    {
+        String[] sillySplit = sillyDefinition.split("/");
+        String sillyEnd = null;
+        if(sillySplit.length > 1)
+            sillyEnd = sillySplit[sillySplit.length-1];
+        return definition.equals(sillyDefinition) || definition.endsWith(sillyDefinition) || (sillyEnd != null && definition.endsWith(sillyEnd));
+    }
 
     protected DataComponent toComponent(String obsType, ObservedProperty obsProp, UnitOfMeasurement uom)
     {
         SWEBuilders.DataComponentBuilder<? extends SWEBuilders.DataComponentBuilder<?,?>, ? extends DataComponent> comp = null;
 
-        if (IObservation.OBS_TYPE_MEAS.equals(obsType))
+        if (checkSillyDefinition(IObservation.OBS_TYPE_MEAS, obsType))
         {
             comp = fac.createQuantity();
 
             if (uom.getDefinition() != null && uom.getDefinition().startsWith(UCUM_URI_PREFIX))
                 ((SWEBuilders.QuantityBuilder)comp).uomCode(uom.getDefinition().replace(UCUM_URI_PREFIX, ""));
+            else if(uom.getDefinition() != null && uom.getDefinition().startsWith(UCUM_URI_PREFIX))
+                ((SWEBuilders.QuantityBuilder)comp).uomCode(uom.getDefinition().replace(" ", "").replace("ucum:", ""));
             else
-                ((SWEBuilders.QuantityBuilder)comp).uomUri(uom.getDefinition());
+                ((SWEBuilders.QuantityBuilder)comp).uomUri(uom.getDefinition().replace(" ", ""));
         }
-        else if (IObservation.OBS_TYPE_CATEGORY.equals(obsType))
+        else if (checkSillyDefinition(IObservation.OBS_TYPE_CATEGORY, obsType))
             comp = fac.createCategory();
-        else if (IObservation.OBS_TYPE_COUNT.equals(obsType))
+        else if (checkSillyDefinition(IObservation.OBS_TYPE_COUNT, obsType))
             comp = fac.createCount();
-        else if (IObservation.OBS_TYPE_RECORD.equals(obsType))
+        else if (checkSillyDefinition(IObservation.OBS_TYPE_RECORD, obsType))
             comp = fac.createRecord();
 
         var definition = obsProp.getDefinition();
@@ -174,7 +191,12 @@ public class STAUtils {
 
     public ObsData toObsData(Observation obs, BigId dsId, BigId foiId)
     {
-        Instant phenomenonTime = obs.getPhenomenonTime().getAsDateTime().toInstant().truncatedTo(ChronoUnit.MILLIS);
+        // Check getAsDateTime vs getInterval
+        Instant phenomenonTime = null;
+        if(obs.getPhenomenonTime() != null && !obs.getPhenomenonTime().isInterval())
+            phenomenonTime = obs.getPhenomenonTime().getAsDateTime().toInstant().truncatedTo(ChronoUnit.MILLIS);
+        else if (obs.getPhenomenonTime() != null && obs.getPhenomenonTime().isInterval())
+            phenomenonTime = obs.getPhenomenonTime().getAsInterval().getStart();
 
         Instant resultTime = null;
         if(obs.getResultTime() != null)

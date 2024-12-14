@@ -17,13 +17,13 @@ package org.sensorhub.impl.service.sta.ingest;
 import com.google.common.base.Strings;
 import de.fraunhofer.iosb.ilt.sta.MqttException;
 import de.fraunhofer.iosb.ilt.sta.service.MqttConfig;
-import org.eclipse.paho.client.mqttv3.MqttClientPersistence;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.database.IObsSystemDatabase;
 import org.sensorhub.api.event.IEventBus;
 import org.sensorhub.api.module.ModuleEvent.ModuleState;
 import org.sensorhub.impl.module.AbstractModule;
 import org.sensorhub.impl.system.SystemDatabaseTransactionHandler;
+import org.slf4j.Logger;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -41,7 +41,6 @@ import java.util.Objects;
  */
 public class STAIngestService extends AbstractModule<STAIngestConfig>
 {
-
     IEventBus eventBus;
     SystemDatabaseTransactionHandler transactionHandler;
     IObsSystemDatabase writeDb;
@@ -100,7 +99,7 @@ public class STAIngestService extends AbstractModule<STAIngestConfig>
                         long elapsed = Instant.now().minusMillis(now.toEpochMilli()).toEpochMilli();
                         reportStatus("Ingestion completed in " + elapsed + "ms");
                     } catch (MalformedURLException | MqttException e) {
-                        throw new RuntimeException(e);
+                        getLogger().error(e.getMessage(), e);
                     }
                 });
                 ingestThread.start();

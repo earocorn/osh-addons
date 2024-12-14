@@ -14,13 +14,11 @@ public class DatastreamSubscriber implements Runnable {
 
     Datastream datastream;
     DataStreamTransactionHandler dataStreamTransactionHandler;
-    STAUtils staUtils;
     SensorThingsService sts;
 
     public DatastreamSubscriber(Datastream datastream, DataStreamTransactionHandler dataStreamTransactionHandler, SensorThingsService sts) {
         this.datastream = datastream;
         this.dataStreamTransactionHandler = dataStreamTransactionHandler;
-        this.staUtils = new STAUtils();
         this.sts = sts;
     }
 
@@ -40,7 +38,7 @@ public class DatastreamSubscriber implements Runnable {
                     .<Observation>subscribeRelative(observation -> {
                         System.out.println("Received new observation from " + datastream.getName());
                         dataStreamTransactionHandler.addObs(
-                                staUtils.toObsData(
+                                STAUtils.toObsData(
                                         observation,
                                         dataStreamTransactionHandler.getDataStreamKey().getInternalID(),
                                         null));

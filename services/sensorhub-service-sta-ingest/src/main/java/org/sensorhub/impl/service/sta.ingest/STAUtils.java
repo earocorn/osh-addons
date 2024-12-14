@@ -14,6 +14,7 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataRecord;
 import org.geojson.GeoJsonObject;
 import org.geojson.LngLatAlt;
+import org.geojson.Polygon;
 import org.isotc211.v2005.gmd.CIOnlineResource;
 import org.isotc211.v2005.gmd.impl.GMDFactory;
 import org.sensorhub.api.common.BigId;
@@ -28,6 +29,7 @@ import org.sensorhub.impl.system.wrapper.SystemWrapper;
 import org.sensorhub.utils.SWEDataUtils;
 import org.vast.data.*;
 import org.vast.ogc.gml.GenericFeatureImpl;
+import org.vast.ogc.gml.GeoJsonBindings;
 import org.vast.ogc.om.IObservation;
 import org.vast.ogc.om.SamplingCurve;
 import org.vast.ogc.om.SamplingPoint;
@@ -50,23 +52,24 @@ import java.util.List;
 
 public class STAUtils {
 
-    SWEHelper fac;
-    final String thingUidPrefix = "urn:osh:sta:thing:";
-    final String sensorUidPrefix = "urn:osh:sta:sensor:";
-    static final String GEOJSON_FORMAT = "application/vnd.geo+json";
+    private static SWEHelper fac = new SWEHelper();
+    static final String staUrnPrefix = "urn:osh:sta:";
+    static final String thingUidPrefix = staUrnPrefix + "thing:";
+    static final String sensorUidPrefix = staUrnPrefix + "sensor:";
+    static final String featureUidPrefix = staUrnPrefix + "feature:";
+    static final String VND_GEOJSON_FORMAT = "application/vnd.geo+json";
+    static final String GEOJSON_FORMAT = "application/geo+json";
     static final String UCUM_URI_PREFIX = "http://unitsofmeasure.org/ucum.html#";
+    static final String THING_LOC_OUTPUT_NAME = "thingLocation";
 
-    public STAUtils()
-    {
-        fac = new SWEHelper();
-    }
+    private STAUtils() {}
 
-    public String toUid(String name, Id<?> id)
+    public static String toUid(String name, Id<?> id)
     {
         return SWEDataUtils.toNCName(name + ":" + id);
     }
 
-    public AbstractProcess toSmlProcess(Sensor sensor)
+    public static AbstractProcess toSmlProcess(Sensor sensor)
     {
         String uid = sensorUidPrefix + toUid(sensor.getName(), sensor.getId());
 
@@ -91,7 +94,7 @@ public class STAUtils {
         return sys;
     }
 
-    public AbstractProcess toSmlProcess(Thing thing)
+    public static AbstractProcess toSmlProcess(Thing thing)
     {
         String uid = thingUidPrefix + SWEDataUtils.toNCName(thing.getName()) + ":" + thing.getId();
 
@@ -117,7 +120,7 @@ public class STAUtils {
     }
 
 
-    protected DataRecord toSweCommon(Datastream ds) throws ServiceFailureException {
+    protected static DataRecord toSweCommon(Datastream ds) throws ServiceFailureException {
         var rec = fac.createRecord()
                 .name(SWEDataUtils.toNCName(ds.getName()))
                 .label(ds.getName())
@@ -138,7 +141,7 @@ public class STAUtils {
         return rec.build();
     }
 
-    private boolean checkSillyDefinition(String definition, String sillyDefinition)
+    private static boolean checkSillyDefinition(String definition, String sillyDefinition)
     {
         String[] sillySplit = sillyDefinition.split("/");
         String sillyEnd = null;
@@ -147,7 +150,15 @@ public class STAUtils {
         return definition.equals(sillyDefinition) || definition.endsWith(sillyDefinition) || (sillyEnd != null && definition.endsWith(sillyEnd));
     }
 
-    protected DataComponent toComponent(String obsType, ObservedProperty obsProp, UnitOfMeasurement uom)
+    private static String cleanUom(String uom)
+    {
+        return uom.replace(" ", "")
+                .replace("ucum:", "")
+                .replace("[", "")
+                .replace("]", "");
+    }
+
+    protected static DataComponent toComponent(String obsType, ObservedProperty obsProp, UnitOfMeasurement uom)
     {
         SWEBuilders.DataComponentBuilder<? extends SWEBuilders.DataComponentBuilder<?,?>, ? extends DataComponent> comp = null;
 
@@ -158,9 +169,9 @@ public class STAUtils {
             if (uom.getDefinition() != null && uom.getDefinition().startsWith(UCUM_URI_PREFIX))
                 ((SWEBuilders.QuantityBuilder)comp).uomCode(uom.getDefinition().replace(UCUM_URI_PREFIX, ""));
             else if(uom.getDefinition() != null && uom.getDefinition().startsWith(UCUM_URI_PREFIX))
-                ((SWEBuilders.QuantityBuilder)comp).uomCode(uom.getDefinition().replace(" ", "").replace("ucum:", ""));
+                ((SWEBuilders.QuantityBuilder)comp).uomCode(cleanUom(uom.getDefinition()));
             else
-                ((SWEBuilders.QuantityBuilder)comp).uomUri(uom.getDefinition().replace(" ", ""));
+                ((SWEBuilders.QuantityBuilder)comp).uom(cleanUom(uom.getDefinition()));
         }
         else if (checkSillyDefinition(IObservation.OBS_TYPE_CATEGORY, obsType))
             comp = fac.createCategory();
@@ -189,7 +200,7 @@ public class STAUtils {
         return null;
     }
 
-    public ObsData toObsData(Observation obs, BigId dsId, BigId foiId)
+    public static ObsData toObsData(Observation obs, BigId dsId, BigId foiId)
     {
         // Check getAsDateTime vs getInterval
         Instant phenomenonTime = null;
@@ -213,7 +224,41 @@ public class STAUtils {
                 .build();
     }
 
-    public DataBlock createDataBlock(Instant timestamp, Object val)
+//    public ObsData toObsData(Location location, BigId dsId, BigId foiId)
+//    {
+//        // Check getAsDateTime vs getInterval
+//        Instant phenomenonTime = null;
+//        if(obs.getPhenomenonTime() != null && !obs.getPhenomenonTime().isInterval())
+//            phenomenonTime = obs.getPhenomenonTime().getAsDateTime().toInstant().truncatedTo(ChronoUnit.MILLIS);
+//        else if (obs.getPhenomenonTime() != null && obs.getPhenomenonTime().isInterval())
+//            phenomenonTime = obs.getPhenomenonTime().getAsInterval().getStart();
+//
+//        Instant resultTime = null;
+//        if(obs.getResultTime() != null)
+//            resultTime = obs.getResultTime().toInstant().truncatedTo(ChronoUnit.MILLIS);
+//
+//        DataBlock dataBlock = createDataBlock(phenomenonTime, obs.getResult());
+//
+//        return new ObsData.Builder()
+//                .withDataStream(dsId)
+//                .withFoi(foiId == null ? IObsData.NO_FOI : foiId)
+//                .withPhenomenonTime(phenomenonTime)
+//                .withResultTime(resultTime)
+//                .withResult(dataBlock)
+//                .build();
+//    }
+
+//    public DataComponent toLocationOutput()
+//    {
+//        var record = fac.createRecord()
+//    }
+//
+//    public ObsData toLocationObs(Location location, BigId dsId)
+//    {
+//
+//    }
+
+    public static DataBlock createDataBlock(Instant timestamp, Object val)
     {
         var timestampBlock = new DataBlockDouble(1);
         timestampBlock.setDoubleValue(timestamp.toEpochMilli() / 1000.);
@@ -233,7 +278,7 @@ public class STAUtils {
         }
     }
 
-    public DataBlock createDataBlock(Object val)
+    public static DataBlock createDataBlock(Object val)
     {
         DataBlock dataBlock;
 
@@ -278,9 +323,9 @@ public class STAUtils {
         return dataBlock;
     }
 
-    protected AbstractFeature toGmlFeature(FeatureOfInterest foi, String uid)
+    protected static AbstractFeature toGmlFeature(FeatureOfInterest foi, String uid)
     {
-        Asserts.checkArgument(GEOJSON_FORMAT.equals(foi.getEncodingType()), "Unsupported feature format: %s", foi.getEncodingType());
+        Asserts.checkArgument(GEOJSON_FORMAT.equals(foi.getEncodingType()) || VND_GEOJSON_FORMAT.equals(foi.getEncodingType()), "Unsupported feature format: %s", foi.getEncodingType());
         GeoJsonObject geojson = (GeoJsonObject)foi.getFeature();
 
         AbstractFeature f;
@@ -289,9 +334,24 @@ public class STAUtils {
         else
             f = new GenericFeatureImpl(new QName("Feature"));
 
-        f.setUniqueIdentifier(uid);
+        f.setUniqueIdentifier(featureUidPrefix + uid);
         f.setName(foi.getName());
         f.setDescription(foi.getDescription());
+        return f;
+    }
+
+    protected static AbstractFeature toGmlFeature(Location location, String uid)
+    {
+        Asserts.checkArgument(GEOJSON_FORMAT.equals(location.getEncodingType()) || VND_GEOJSON_FORMAT.equals(location.getEncodingType()),
+                "Unsupported location format: %s", location.getEncodingType());
+        GeoJsonObject geojson = (GeoJsonObject)location.getLocation();
+
+        var f = new GenericFeatureImpl(new QName("Location"));
+        f.setUniqueIdentifier(featureUidPrefix + uid);
+        f.setName(location.getName());
+        f.setDescription(location.getDescription());
+        if (geojson != null)
+            f.setGeometry(toGmlGeometry(geojson));
         return f;
     }
 
@@ -351,7 +411,10 @@ public class STAUtils {
         }
         else if (geojson instanceof org.geojson.Polygon)
         {
-
+            Polygon polygon = (Polygon) geojson;
+            var p = fac.newPolygon();
+            // TODO: Translate polygon
+            return p;
         }
 
         throw new IllegalArgumentException("Unsupported geometry: " + geojson.getClass().getSimpleName());

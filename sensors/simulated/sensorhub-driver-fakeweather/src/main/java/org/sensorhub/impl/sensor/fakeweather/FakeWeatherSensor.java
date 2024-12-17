@@ -16,6 +16,7 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 package org.sensorhub.impl.sensor.fakeweather;
 
 import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.api.module.ModuleEvent;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.sensorhub.impl.sensor.fakeweather.FakeWeatherOutput;
 import org.vast.sensorML.SMLHelper;
@@ -38,9 +39,9 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
     
     
     @Override
-    public void init() throws SensorHubException
+    public void doInit() throws SensorHubException
     {
-        super.init();
+        super.doInit();
         
         // generate identifiers
         generateUniqueID("urn:osh:sensor:simweather:", config.serialNumber);
@@ -70,15 +71,15 @@ public class FakeWeatherSensor extends AbstractSensorModule<FakeWeatherConfig>
 
 
     @Override
-    public void start() throws SensorHubException
+    public void doStart() throws SensorHubException
     {
         if (dataInterface != null)
-            dataInterface.start();        
+            dataInterface.start();
     }
     
 
     @Override
-    public void stop() throws SensorHubException
+    public void doStop() throws SensorHubException
     {
         if (dataInterface != null)
             dataInterface.stop();

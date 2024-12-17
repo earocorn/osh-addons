@@ -92,12 +92,9 @@ public class STAIngestService extends AbstractModule<STAIngestConfig>
                 URL url = new URL(urlString);
                 Thread ingestThread = new Thread(() -> {
                     try {
-                        Instant now = Instant.now();
                         MqttConfig mqttConfig = config.mqttUri == null ? null : new MqttConfig(config.mqttUri);
                         STAIngestor ingestor = new STAIngestor(url, mqttConfig, Objects.equals(writeDb, getParentHub().getSystemDriverRegistry().getSystemStateDatabase()), transactionHandler);
                         ingestor.ingest();
-                        long elapsed = Instant.now().minusMillis(now.toEpochMilli()).toEpochMilli();
-                        reportStatus("Ingestion completed in " + elapsed + "ms");
                     } catch (MalformedURLException | MqttException e) {
                         getLogger().error(e.getMessage(), e);
                     }

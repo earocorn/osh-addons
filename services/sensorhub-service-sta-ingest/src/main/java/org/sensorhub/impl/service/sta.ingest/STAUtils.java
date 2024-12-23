@@ -1,10 +1,14 @@
 package org.sensorhub.impl.service.sta.ingest;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.fge.jackson.NodeType;
 import de.fraunhofer.iosb.ilt.sta.ServiceFailureException;
 import de.fraunhofer.iosb.ilt.sta.model.*;
 import de.fraunhofer.iosb.ilt.sta.model.ext.UnitOfMeasurement;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.AbstractGeometry;
+import net.opengis.gml.v32.impl.AbstractGeometryImpl;
 import net.opengis.gml.v32.impl.GMLFactory;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.DocumentList;
@@ -25,6 +29,7 @@ import org.sensorhub.api.data.ObsData;
 import org.sensorhub.api.feature.FeatureId;
 import org.sensorhub.utils.SWEDataUtils;
 import org.vast.data.*;
+import org.vast.ogc.gml.GenericFeature;
 import org.vast.ogc.gml.GenericFeatureImpl;
 import org.vast.ogc.om.*;
 import org.vast.sensorML.SMLFactory;
@@ -35,12 +40,15 @@ import org.vast.swe.SWEHelper;
 import org.vast.util.Asserts;
 
 import javax.xml.namespace.QName;
+import java.io.Serializable;
 import java.net.URI;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 public class STAUtils {
 
@@ -112,23 +120,43 @@ public class STAUtils {
     }
 
 
-    protected static DataRecord toSweCommon(Datastream ds) throws ServiceFailureException {
-        var rec = fac.createRecord()
-                .name(SWEDataUtils.toNCName(ds.getName()))
-                .label(ds.getName())
-                .description(ds.getDescription())
-                .addField("time", fac.createTime().asPhenomenonTimeIsoUTC()
-                        .label("Sampling Time"));
+    protected static DataRecord toSweCommon(Entity<?> entity) throws ServiceFailureException {
+        SWEBuilders.DataRecordBuilder rec = null;
+        if(entity instanceof Datastream) {
+            Datastream ds = (Datastream)entity;
 
-        ObservedProperty obsProp = ds.getObservedProperty();
+            rec = fac.createRecord()
+                    .name(SWEDataUtils.toNCName(ds.getName()))
+                    .label(ds.getName())
+                    .description(ds.getDescription())
+                    .addField("time", fac.createTime().asPhenomenonTimeIsoUTC()
+                            .label("Sampling Time"));
 
-        DataComponent comp = toComponent(
-                ds.getObservationType(),
-                obsProp,
-                ds.getUnitOfMeasurement());
+            ObservedProperty obsProp = ds.getObservedProperty();
 
-        if(comp != null)
-            rec.addField(comp.getName(), comp);
+            DataComponent comp = toComponent(
+                    ds.getObservationType(),
+                    obsProp,
+                    ds.getUnitOfMeasurement());
+
+            if (comp != null)
+                rec.addField(comp.getName(), comp);
+        } else if(entity instanceof MultiDatastream) {
+            MultiDatastream ds = (MultiDatastream)entity;
+
+            int i = 0;
+            for (ObservedProperty obsProp: ds.getObservedProperties())
+            {
+
+                DataComponent comp = toComponent(
+                        ds.getMultiObservationDataTypes().get(i),
+                        obsProp,
+                        ds.getUnitOfMeasurements().get(i));
+                i++;
+
+                rec.addField(comp.getName(), comp);
+            }
+        }
 
         return rec.build();
     }
@@ -156,14 +184,14 @@ public class STAUtils {
 
         if (checkDefinition(IObservation.OBS_TYPE_MEAS, obsType))
         {
-            comp = fac.createQuantity();
+            comp = fac.createText();
 
-            if (uom.getDefinition() != null && uom.getDefinition().startsWith(UCUM_URI_PREFIX))
-                ((SWEBuilders.QuantityBuilder)comp).uomCode(uom.getDefinition().replace(UCUM_URI_PREFIX, ""));
-            else if(uom.getDefinition() != null && uom.getDefinition().startsWith(UCUM_URI_PREFIX))
-                ((SWEBuilders.QuantityBuilder)comp).uomCode(cleanUom(uom.getDefinition()));
-            else
-                ((SWEBuilders.QuantityBuilder)comp).uom(cleanUom(uom.getDefinition()));
+//            if (uom.getDefinition() != null && uom.getDefinition().startsWith(UCUM_URI_PREFIX))
+//                ((SWEBuilders.QuantityBuilder)comp).uomCode(uom.getDefinition().replace(UCUM_URI_PREFIX, ""));
+//            else if(uom.getDefinition() != null && uom.getDefinition().startsWith(UCUM_URI_PREFIX))
+//                ((SWEBuilders.QuantityBuilder)comp).uomCode(cleanUom(uom.getDefinition()));
+//            else
+//                ((SWEBuilders.QuantityBuilder) comp).uomUri(cleanUom(uom.getDefinition())); // TODO: Fix erroneous units
         }
         else if (checkDefinition(IObservation.OBS_TYPE_CATEGORY, obsType))
             comp = fac.createCategory();
@@ -336,17 +364,45 @@ public class STAUtils {
 
     protected static AbstractFeature toGmlFeature(Location location, String uid)
     {
-        Asserts.checkArgument(GEOJSON_FORMAT.equals(location.getEncodingType()) || VND_GEOJSON_FORMAT.equals(location.getEncodingType()),
-                "Unsupported location format: ", location.getEncodingType());
-        GeoJsonObject geojson = (GeoJsonObject)location.getLocation();
-
-        var f = new GenericFeatureImpl(new QName("Location"));
+        GenericFeature f;
+        f = new GenericFeatureImpl(new QName("Location"));
         f.setUniqueIdentifier(featureUidPrefix + uid);
         f.setName(location.getName());
         f.setDescription(location.getDescription());
-        if (geojson != null)
-            f.setGeometry(toGmlGeometry(geojson));
+
+        if(GEOJSON_FORMAT.equals(location.getEncodingType()) || VND_GEOJSON_FORMAT.equals(location.getEncodingType())) {
+            GeoJsonObject geojson = (GeoJsonObject) location.getLocation();
+
+            if (geojson != null)
+                f.setGeometry(toGmlGeometry(geojson));
+        } else {
+            var featureProperties = new AbstractGeometryImpl();
+
+            if(location.getLocation() instanceof ObjectNode) {
+                var fields = ((ObjectNode) location.getLocation()).fields();
+                while(fields.hasNext()) {
+                    var field = fields.next();
+                    f.setProperty(new QName(field.getKey()), fromJsonNode(field.getValue()));
+                }
+            }
+
+            f.setGeometry(null);
+        }
+
         return f;
+    }
+
+    private static Serializable fromJsonNode(JsonNode node) {
+        switch (node.getNodeType()) {
+            case NUMBER:
+                return node.asDouble();
+            case STRING:
+                return node.asText();
+            case BOOLEAN:
+                return node.asBoolean();
+        }
+
+        return null;
     }
 
     public static AbstractFeature toSamplingFeature(org.geojson.GeoJsonObject geojson)

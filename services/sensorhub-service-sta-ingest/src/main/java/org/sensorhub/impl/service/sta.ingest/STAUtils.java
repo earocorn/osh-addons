@@ -6,12 +6,14 @@ import de.fraunhofer.iosb.ilt.sta.model.builder.FeatureOfInterestBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.ext.UnitOfMeasurement;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.AbstractGeometry;
+import net.opengis.gml.v32.impl.AbstractFeatureImpl;
 import net.opengis.gml.v32.impl.GMLFactory;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.DocumentList;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataRecord;
+import org.geojson.Feature;
 import org.geojson.GeoJsonObject;
 import org.geojson.LngLatAlt;
 import org.geojson.Polygon;
@@ -28,12 +30,10 @@ import org.sensorhub.api.system.ISystemWithDesc;
 import org.sensorhub.impl.system.wrapper.SystemWrapper;
 import org.sensorhub.utils.SWEDataUtils;
 import org.vast.data.*;
+import org.vast.ogc.gml.GenericFeature;
 import org.vast.ogc.gml.GenericFeatureImpl;
 import org.vast.ogc.gml.GeoJsonBindings;
-import org.vast.ogc.om.IObservation;
-import org.vast.ogc.om.SamplingCurve;
-import org.vast.ogc.om.SamplingPoint;
-import org.vast.ogc.om.SamplingSurface;
+import org.vast.ogc.om.*;
 import org.vast.sensorML.SMLFactory;
 import org.vast.sensorML.SMLHelper;
 import org.vast.swe.SWEBuilders;
@@ -49,6 +49,7 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class STAUtils {
 
@@ -378,6 +379,12 @@ public class STAUtils {
             sf.setGeometry(toGmlGeometry(geojson));
             return sf;
         }
+        else if (geojson instanceof org.geojson.Feature)
+        {
+            SamplingFeature<?> sf = new SamplingFeature<>();
+            sf.setGeometry(toGmlGeometry(geojson));
+            return sf;
+        }
         else
             throw new IllegalArgumentException("Unsupported geometry: " + geojson.getClass().getSimpleName());
     }
@@ -415,6 +422,11 @@ public class STAUtils {
             var p = fac.newPolygon();
             // TODO: Translate polygon
             return p;
+        }
+        else if (geojson instanceof org.geojson.Feature)
+        {
+            if (!(((Feature) geojson).getGeometry() instanceof Feature))
+                return toGmlGeometry(((Feature) geojson).getGeometry());
         }
 
         throw new IllegalArgumentException("Unsupported geometry: " + geojson.getClass().getSimpleName());

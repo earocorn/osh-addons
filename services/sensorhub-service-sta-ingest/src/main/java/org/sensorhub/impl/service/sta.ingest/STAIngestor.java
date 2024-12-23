@@ -65,6 +65,8 @@ public class STAIngestor
             var things = sts.things().query().list().toList();
             for (Thing thing : things)
                 registerThing(thing);
+            // TODO: Register tasking capabilities/actuators as OSH Control Stream
+            // TODO: Use SWE JSON Bindings to convert taskingParameters to SWE command params
 
         }
         catch (ServiceFailureException e)

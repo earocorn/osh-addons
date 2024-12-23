@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 public class STAIngestor
@@ -62,9 +63,10 @@ public class STAIngestor
         try
         {
             // Get all things
-            var things = sts.things().query().list().toList();
-            for (Thing thing : things)
-                registerThing(thing);
+            var things = sts.things().query().list();
+            Iterator<Thing> i = things.fullIterator();
+            while(i.hasNext())
+                registerThing(i.next());
             // TODO: Register tasking capabilities/actuators as OSH Control Stream
             // TODO: Use SWE JSON Bindings to convert taskingParameters to SWE command params
 
@@ -92,20 +94,22 @@ public class STAIngestor
                 {
                     // Add Thing's locations as
                     var thingLocations = thing.locations().query().list();
-                    for (Location location : thingLocations)
+                    for(Location location : thingLocations.toList())
                         handler.addFoi(STAUtils.toGmlFeature(location, STAUtils.toUid(location.getName(), location.getId())));
                 }
                 catch (Exception e)
                 {
-                    System.out.println(e.getMessage());
+                    e.printStackTrace();
                 }
 
                 var datastreams = thing.datastreams().query().list();
+                Iterator<Datastream> datastreamIterator = datastreams.fullIterator();
 
                 Map<Id<?>, SensorData> smlSensorMap = new HashMap<>();
 
-                for (Datastream datastream : datastreams)
+                while(datastreamIterator.hasNext())
                 {
+                    var datastream = datastreamIterator.next();
                     var sensor = datastream.getSensor();
 
                     // Keep track of Sensors
@@ -158,9 +162,11 @@ public class STAIngestor
             if(!this.usingStateDb)
             {
                 var observations = datastream.observations().query().list();
+                Iterator<Observation> i = observations.fullIterator();
 
-                for (Observation observation : observations)
+                while(i.hasNext())
                 {
+                    var observation = i.next();
                     // Add FOI if available
                     var feature = observation.getFeatureOfInterest();
                     BigId featureId = null;

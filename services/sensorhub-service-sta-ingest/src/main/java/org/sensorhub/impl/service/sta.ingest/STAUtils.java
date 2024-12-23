@@ -2,11 +2,9 @@ package org.sensorhub.impl.service.sta.ingest;
 
 import de.fraunhofer.iosb.ilt.sta.ServiceFailureException;
 import de.fraunhofer.iosb.ilt.sta.model.*;
-import de.fraunhofer.iosb.ilt.sta.model.builder.FeatureOfInterestBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.ext.UnitOfMeasurement;
 import net.opengis.gml.v32.AbstractFeature;
 import net.opengis.gml.v32.AbstractGeometry;
-import net.opengis.gml.v32.impl.AbstractFeatureImpl;
 import net.opengis.gml.v32.impl.GMLFactory;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.DocumentList;
@@ -24,22 +22,16 @@ import org.sensorhub.api.data.DataStreamInfo;
 import org.sensorhub.api.data.IDataStreamInfo;
 import org.sensorhub.api.data.IObsData;
 import org.sensorhub.api.data.ObsData;
-import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.feature.FeatureId;
-import org.sensorhub.api.system.ISystemWithDesc;
-import org.sensorhub.impl.system.wrapper.SystemWrapper;
 import org.sensorhub.utils.SWEDataUtils;
 import org.vast.data.*;
-import org.vast.ogc.gml.GenericFeature;
 import org.vast.ogc.gml.GenericFeatureImpl;
-import org.vast.ogc.gml.GeoJsonBindings;
 import org.vast.ogc.om.*;
 import org.vast.sensorML.SMLFactory;
 import org.vast.sensorML.SMLHelper;
 import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
-import org.vast.swe.SWEUtils;
 import org.vast.util.Asserts;
 
 import javax.xml.namespace.QName;
@@ -49,7 +41,6 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class STAUtils {
 
@@ -142,13 +133,13 @@ public class STAUtils {
         return rec.build();
     }
 
-    private static boolean checkSillyDefinition(String definition, String sillyDefinition)
+    private static boolean checkDefinition(String defOrUri, String sillyDefinition)
     {
-        String[] sillySplit = sillyDefinition.split("/");
-        String sillyEnd = null;
-        if(sillySplit.length > 1)
-            sillyEnd = sillySplit[sillySplit.length-1];
-        return definition.equals(sillyDefinition) || definition.endsWith(sillyDefinition) || (sillyEnd != null && definition.endsWith(sillyEnd));
+        String[] endOfPath = sillyDefinition.split("/");
+        String def = null;
+        if(endOfPath.length > 1)
+            def = endOfPath[endOfPath.length-1];
+        return defOrUri.equals(sillyDefinition) || defOrUri.endsWith(sillyDefinition) || (def != null && defOrUri.endsWith(def));
     }
 
     private static String cleanUom(String uom)
@@ -163,7 +154,7 @@ public class STAUtils {
     {
         SWEBuilders.DataComponentBuilder<? extends SWEBuilders.DataComponentBuilder<?,?>, ? extends DataComponent> comp = null;
 
-        if (checkSillyDefinition(IObservation.OBS_TYPE_MEAS, obsType))
+        if (checkDefinition(IObservation.OBS_TYPE_MEAS, obsType))
         {
             comp = fac.createQuantity();
 
@@ -174,12 +165,14 @@ public class STAUtils {
             else
                 ((SWEBuilders.QuantityBuilder)comp).uom(cleanUom(uom.getDefinition()));
         }
-        else if (checkSillyDefinition(IObservation.OBS_TYPE_CATEGORY, obsType))
+        else if (checkDefinition(IObservation.OBS_TYPE_CATEGORY, obsType))
             comp = fac.createCategory();
-        else if (checkSillyDefinition(IObservation.OBS_TYPE_COUNT, obsType))
+        else if (checkDefinition(IObservation.OBS_TYPE_COUNT, obsType))
             comp = fac.createCount();
-        else if (checkSillyDefinition(IObservation.OBS_TYPE_RECORD, obsType))
+        else if (checkDefinition(IObservation.OBS_TYPE_RECORD, obsType))
             comp = fac.createRecord();
+        else
+            comp = fac.createText();
 
         var definition = obsProp.getDefinition();
         try {
@@ -344,7 +337,7 @@ public class STAUtils {
     protected static AbstractFeature toGmlFeature(Location location, String uid)
     {
         Asserts.checkArgument(GEOJSON_FORMAT.equals(location.getEncodingType()) || VND_GEOJSON_FORMAT.equals(location.getEncodingType()),
-                "Unsupported location format: %s", location.getEncodingType());
+                "Unsupported location format: ", location.getEncodingType());
         GeoJsonObject geojson = (GeoJsonObject)location.getLocation();
 
         var f = new GenericFeatureImpl(new QName("Location"));

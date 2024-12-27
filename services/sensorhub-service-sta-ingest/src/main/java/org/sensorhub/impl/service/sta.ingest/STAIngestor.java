@@ -89,10 +89,9 @@ public class STAIngestor
                 // Add system to database
                 var handler = transactionHandler.addOrUpdateSystem(parentSystem);
 
-                // TODO: Allow abstract locations such as address
                 try
                 {
-                    // Add Thing's locations as
+                    // Add Thing's locations as FOIs
                     var thingLocations = thing.locations().query().list();
                     for(Location location : thingLocations.toList())
                         handler.addFoi(STAUtils.toGmlFeature(location, STAUtils.toUid(location.getName(), location.getId())));
@@ -131,6 +130,9 @@ public class STAIngestor
                 for(SensorData sensorData : smlSensorMap.values())
                     registerSensor(sensorData, handler);
 
+                // TODO: Register tasking capabilities
+//                var taskingCapabilities = thing.taskingCapabilities().query().list();
+//                Iterator<TaskingCapability> taskingCapabilityIterator = taskingCapabilities.fullIterator();
             }
             catch (Exception e)
             {

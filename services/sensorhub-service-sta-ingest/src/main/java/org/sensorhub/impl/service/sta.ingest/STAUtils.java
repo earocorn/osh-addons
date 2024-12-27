@@ -21,6 +21,7 @@ import org.geojson.LngLatAlt;
 import org.geojson.Polygon;
 import org.isotc211.v2005.gmd.CIOnlineResource;
 import org.isotc211.v2005.gmd.impl.GMDFactory;
+import org.sensorhub.api.command.ICommandStreamInfo;
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.data.DataStreamInfo;
 import org.sensorhub.api.data.IDataStreamInfo;
@@ -119,7 +120,6 @@ public class STAUtils {
                 .build();
     }
 
-
     protected static DataRecord toSweCommon(Entity<?> entity) throws ServiceFailureException {
         SWEBuilders.DataRecordBuilder rec = null;
         if(entity instanceof Datastream) {
@@ -184,14 +184,14 @@ public class STAUtils {
 
         if (checkDefinition(IObservation.OBS_TYPE_MEAS, obsType))
         {
-            comp = fac.createText();
+            comp = fac.createQuantity();
 
-//            if (uom.getDefinition() != null && uom.getDefinition().startsWith(UCUM_URI_PREFIX))
-//                ((SWEBuilders.QuantityBuilder)comp).uomCode(uom.getDefinition().replace(UCUM_URI_PREFIX, ""));
-//            else if(uom.getDefinition() != null && uom.getDefinition().startsWith(UCUM_URI_PREFIX))
-//                ((SWEBuilders.QuantityBuilder)comp).uomCode(cleanUom(uom.getDefinition()));
-//            else
-//                ((SWEBuilders.QuantityBuilder) comp).uomUri(cleanUom(uom.getDefinition())); // TODO: Fix erroneous units
+            if (uom.getDefinition() != null && uom.getDefinition().startsWith(UCUM_URI_PREFIX))
+                ((SWEBuilders.QuantityBuilder)comp).uomCode(uom.getDefinition().replace(UCUM_URI_PREFIX, ""));
+            else if(uom.getDefinition() != null && uom.getDefinition().startsWith(UCUM_URI_PREFIX))
+                ((SWEBuilders.QuantityBuilder)comp).uomCode(cleanUom(uom.getDefinition()));
+            else
+                ((SWEBuilders.QuantityBuilder) comp).uomUri(cleanUom(uom.getDefinition())); // TODO: Fix erroneous units
         }
         else if (checkDefinition(IObservation.OBS_TYPE_CATEGORY, obsType))
             comp = fac.createCategory();

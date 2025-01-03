@@ -1,23 +1,16 @@
 package org.sensorhub.impl.service.moduleapi.module;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import org.sensorhub.api.ISensorHub;
 import org.sensorhub.api.common.IdEncoders;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.module.IModule;
-import org.sensorhub.api.module.IModuleManager;
 import org.sensorhub.api.module.ModuleConfig;
-import org.sensorhub.api.module.ModuleEvent;
-import org.sensorhub.impl.SensorHub;
 import org.sensorhub.impl.module.ModuleRegistry;
+import org.sensorhub.impl.service.consys.resource.RequestContext;
+import org.sensorhub.impl.service.consys.resource.ResourceBindingJson;
+import org.sensorhub.impl.service.consys.resource.ResourceLink;
 import org.sensorhub.impl.service.moduleapi.util.ModuleConfigUtil;
-import org.sensorhub.impl.service.sweapi.resource.RequestContext;
-import org.sensorhub.impl.service.sweapi.resource.ResourceBindingJson;
-import org.sensorhub.impl.service.sweapi.resource.ResourceLink;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -53,6 +46,7 @@ public class ModuleBindingJson extends ResourceBindingJson<String, ModuleConfig>
     }
 
     public ModuleConfig deserialize() {
+
         return deserialize(reader);
     }
 

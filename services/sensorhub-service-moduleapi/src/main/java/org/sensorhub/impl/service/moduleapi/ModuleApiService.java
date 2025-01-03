@@ -23,10 +23,10 @@ import org.sensorhub.api.module.ModuleEvent.ModuleState;
 import org.sensorhub.api.service.IServiceModule;
 import org.sensorhub.impl.service.AbstractHttpServiceModule;
 import org.sensorhub.impl.service.moduleapi.home.HomePageHandler;
+import org.sensorhub.impl.service.moduleapi.module.ConfigurationHandler;
 import org.sensorhub.impl.service.moduleapi.module.ControlHandler;
 import org.sensorhub.impl.service.moduleapi.module.ModuleHandler;
-import org.sensorhub.impl.service.sweapi.ObsSystemDbWrapper;
-import org.sensorhub.impl.service.sweapi.RestApiService;
+import org.sensorhub.impl.service.consys.RestApiService;
 import org.sensorhub.utils.NamedThreadFactory;
 
 
@@ -85,6 +85,9 @@ public class ModuleApiService extends AbstractHttpServiceModule<ModuleApiService
 
         var controlHandler = new ControlHandler(registry);
         moduleHandler.addSubResource(controlHandler);
+
+        var configurationHandler = new ConfigurationHandler(registry);
+        moduleHandler.addSubResource(configurationHandler);
         
         // deploy servlet
         servlet = new ModuleApiServlet(this, (ModuleApiSecurity) securityHandler, rootHandler, getLogger());

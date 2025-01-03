@@ -1,35 +1,21 @@
 package org.sensorhub.impl.service.moduleapi.module;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonToken;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.websocket.api.StatusCode;
-import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.module.IModule;
-import org.sensorhub.api.module.IModuleManager;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.api.processing.IProcessModule;
 import org.sensorhub.api.sensor.ISensorModule;
-import org.sensorhub.impl.datastore.DataStoreFiltersTypeAdapterFactory;
-import org.sensorhub.impl.module.ModuleConfigJsonFile;
 import org.sensorhub.impl.module.ModuleRegistry;
-import org.sensorhub.impl.service.moduleapi.util.ModuleConfigUtil;
-import org.sensorhub.impl.service.sweapi.BaseHandler;
-import org.sensorhub.impl.service.sweapi.InvalidRequestException;
-import org.sensorhub.impl.service.sweapi.ServiceErrors;
-import org.sensorhub.impl.service.sweapi.resource.RequestContext;
-import org.sensorhub.impl.service.sweapi.stream.StreamHandler;
+import org.sensorhub.impl.service.consys.InvalidRequestException;
+import org.sensorhub.impl.service.consys.ServiceErrors;
+import org.sensorhub.impl.service.consys.resource.RequestContext;
+import org.sensorhub.impl.service.moduleapi.ModuleBaseResourceHandler;
 
 import java.io.*;
-import java.nio.Buffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
 
-public class ModuleHandler extends BaseHandler {
+public class ModuleHandler extends ModuleBaseResourceHandler {
 
     public static final String[] NAMES = { "modules" };
 
@@ -43,42 +29,41 @@ public class ModuleHandler extends BaseHandler {
         var installedModules = registry.getInstalledModuleTypes();
         this.availableModuleTypes = new HashMap<>();
         for(var i : installedModules) {
-            var moduleName = i.getModuleName();
-            var moduleClass = i.getModuleClass();
-            var moduleVersion = i.getModuleVersion();
-            var config = i.getModuleConfigClass();
-            var className = moduleClass.getName();
-            var module = moduleClass.getModule();
-            var configFields = config.getFields();
+//            var moduleName = i.getModuleName();
+//            var moduleClass = i.getModuleClass();
+//            var moduleVersion = i.getModuleVersion();
+//            var config = i.getModuleConfigClass();
+//            var className = moduleClass.getName();
+//            var module = moduleClass.getModule();
+//            var configFields = config.getFields();
             availableModuleTypes.put(i.getModuleName(), i);
         }
     }
 
-    private ModuleBindingJson getBinding(RequestContext ctx, boolean forReading) throws IOException {
+    protected ModuleBindingJson getBinding(RequestContext ctx, boolean forReading) throws IOException {
         return new ModuleBindingJson(ctx, null, forReading, this.registry);
     }
 
-    @Override
-    public void doGet(RequestContext ctx) throws IOException, SecurityException {
-        if (ctx.isEndOfPath())
-        {
-            list(ctx);
-            return;
-        }
+    public static IModule<?> validatePathModule(RequestContext ctx, ModuleRegistry registry) throws InvalidRequestException {
+        if(ctx.isEndOfPath() && !(ctx.getRequestPath().contains(ModuleHandler.NAMES[0])))
+            throw ServiceErrors.unsupportedOperation("Configuration can only be retrieved from a module");
 
-        // otherwise there should be a specific collection ID
-        String id = ctx.popNextPathElt();
-        if (ctx.isEndOfPath())
-        {
-            try {
-                getById(ctx, id);
-            } catch (SensorHubException e) {
-                throw new InvalidRequestException(InvalidRequestException.ErrorCode.NOT_FOUND, "The requested module could not be found");
-            }
+        String[] path = ctx.getRequestPath().split("/");
+        String moduleId = path[path.length - 2];
+        IModule<?> module;
+
+        try {
+            module = registry.getModuleById(moduleId);
+            if(module == null)
+                throw ServiceErrors.notFound(moduleId);
+        } catch (Exception e) {
+            throw ServiceErrors.notFound(moduleId);
         }
+        return module;
     }
 
-    private void list(RequestContext ctx) throws IOException {
+    @Override
+    public void list(RequestContext ctx) throws IOException {
         var binding = getBinding(ctx, false);
         binding.startCollection();
         for(IModule<?> module : this.registry.getLoadedModules()) {
@@ -89,17 +74,24 @@ public class ModuleHandler extends BaseHandler {
         binding.endCollection();
     }
 
-    private void getById(RequestContext ctx, String id) throws SensorHubException, IOException {
+    @Override
+    public void getById(RequestContext ctx, String id) throws IOException {
         // get module config by id
         var binding = getBinding(ctx, false);
-        IModule<?> module = this.registry.getModuleById(id);
-        if(module == null)
-            throw new SensorHubException("Module not found");
-        binding.serialize(module.getConfiguration());
+        IModule<?> module;
+        try {
+            module = this.registry.getModuleById(id);
+            binding.serialize(module.getConfiguration());
+        } catch (Exception e) {
+            throw new FileNotFoundException("Module not found");
+        }
     }
 
     @Override
-    public void doPost(RequestContext ctx) throws InvalidRequestException, IOException, SecurityException {
+    public void create(RequestContext ctx) throws InvalidRequestException, IOException, SecurityException {
+        if (!ctx.isEndOfPath())
+            return;
+
         // add new module
         var binding = getBinding(ctx, true);
 
@@ -127,18 +119,18 @@ public class ModuleHandler extends BaseHandler {
     }
 
     @Override
-    public void doPut(RequestContext ctx) throws SecurityException, InvalidRequestException {
+    protected void update(RequestContext ctx, String id) throws IOException {
         throw ServiceErrors.unsupportedOperation("");
     }
 
     @Override
-    public void doDelete(RequestContext ctx) throws IOException, SecurityException {
-        // TODO: Stop and remove module and associations
+    protected void delete(RequestContext ctx, String id) throws IOException {
+        // TODO: Implement module deletion logic
+        throw ServiceErrors.unsupportedOperation("");
     }
 
     @Override
     public String[] getNames() {
         return NAMES;
     }
-
 }

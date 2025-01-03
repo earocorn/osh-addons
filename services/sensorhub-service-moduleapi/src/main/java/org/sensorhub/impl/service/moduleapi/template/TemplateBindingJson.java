@@ -4,9 +4,9 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import org.sensorhub.api.common.IdEncoders;
 import org.sensorhub.api.module.ModuleConfig;
-import org.sensorhub.impl.service.sweapi.resource.RequestContext;
-import org.sensorhub.impl.service.sweapi.resource.ResourceBindingJson;
-import org.sensorhub.impl.service.sweapi.resource.ResourceLink;
+import org.sensorhub.impl.service.consys.resource.RequestContext;
+import org.sensorhub.impl.service.consys.resource.ResourceBindingJson;
+import org.sensorhub.impl.service.consys.resource.ResourceLink;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -26,6 +26,7 @@ public class TemplateBindingJson extends ResourceBindingJson<String, ModuleConfi
     public void serialize(String key, ModuleConfig res, boolean showLinks, JsonWriter writer) throws IOException {
 
     }
+
 
     @Override
     public void startCollection() throws IOException {

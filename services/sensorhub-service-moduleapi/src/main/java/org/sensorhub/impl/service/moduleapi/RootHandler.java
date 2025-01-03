@@ -15,11 +15,12 @@ Copyright (C) 2020 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.moduleapi;
 
 import java.io.IOException;
+
+import org.sensorhub.impl.service.consys.BaseHandler;
+import org.sensorhub.impl.service.consys.ServiceErrors;
+import org.sensorhub.impl.service.consys.resource.IResourceHandler;
+import org.sensorhub.impl.service.consys.resource.RequestContext;
 import org.sensorhub.impl.service.moduleapi.home.HomePageHandler;
-import org.sensorhub.impl.service.sweapi.BaseHandler;
-import org.sensorhub.impl.service.sweapi.ServiceErrors;
-import org.sensorhub.impl.service.sweapi.resource.IResourceHandler;
-import org.sensorhub.impl.service.sweapi.resource.RequestContext;
 
 
 public class RootHandler extends BaseHandler

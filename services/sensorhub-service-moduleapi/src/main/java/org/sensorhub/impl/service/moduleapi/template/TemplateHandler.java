@@ -1,19 +1,19 @@
 package org.sensorhub.impl.service.moduleapi.template;
 
+import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.api.module.IModule;
-import org.sensorhub.api.module.IModuleProvider;
-import org.sensorhub.api.processing.IProcessModule;
-import org.sensorhub.api.sensor.ISensorModule;
+import org.sensorhub.api.datastore.IQueryFilter;
 import org.sensorhub.impl.module.ModuleRegistry;
-import org.sensorhub.impl.service.sweapi.BaseHandler;
-import org.sensorhub.impl.service.sweapi.InvalidRequestException;
-import org.sensorhub.impl.service.sweapi.resource.RequestContext;
+import org.sensorhub.impl.service.consys.ResourceParseException;
+import org.sensorhub.impl.service.consys.resource.ResourceBinding;
+import org.sensorhub.impl.service.moduleapi.ModuleBaseResourceHandler;
+import org.sensorhub.impl.service.consys.InvalidRequestException;
+import org.sensorhub.impl.service.consys.resource.RequestContext;
 
 import java.io.IOException;
 import java.util.Map;
 
-public class TemplateHandler extends BaseHandler {
+public class TemplateHandler extends ModuleBaseResourceHandler {
 
     public static final String[] NAMES = { "templates" };
     ModuleRegistry registry;
@@ -32,7 +32,23 @@ public class TemplateHandler extends BaseHandler {
      * @param ctx
      * @throws IOException
      */
-    private void list(RequestContext ctx) throws IOException {
+    @Override
+    protected void list(RequestContext ctx) throws IOException {
+
+    }
+
+    @Override
+    protected void create(RequestContext ctx) throws IOException {
+
+    }
+
+    @Override
+    protected void update(RequestContext ctx, String id) throws IOException {
+
+    }
+
+    @Override
+    protected void delete(RequestContext ctx, String id) throws IOException {
 
     }
 
@@ -40,10 +56,10 @@ public class TemplateHandler extends BaseHandler {
      * Retrieve module configuration template by its object class
      * @param ctx
      * @param objectClass
-     * @throws SensorHubException
      * @throws IOException
      */
-    private void getById(RequestContext ctx, String objectClass) throws SensorHubException, IOException {
+    @Override
+    protected void getById(RequestContext ctx, String objectClass) throws IOException {
 
     }
 
@@ -66,5 +82,4 @@ public class TemplateHandler extends BaseHandler {
     public String[] getNames() {
         return NAMES;
     }
-
 }

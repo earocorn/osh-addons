@@ -15,12 +15,13 @@ Copyright (C) 2022 Sensia Software LLC. All Rights Reserved.
 package org.sensorhub.impl.service.moduleapi.home;
 
 import java.io.IOException;
+
+import org.sensorhub.impl.service.consys.BaseHandler;
+import org.sensorhub.impl.service.consys.InvalidRequestException;
+import org.sensorhub.impl.service.consys.ServiceErrors;
+import org.sensorhub.impl.service.consys.resource.RequestContext;
+import org.sensorhub.impl.service.consys.resource.ResourceFormat;
 import org.sensorhub.impl.service.moduleapi.ModuleApiServiceConfig;
-import org.sensorhub.impl.service.sweapi.BaseHandler;
-import org.sensorhub.impl.service.sweapi.InvalidRequestException;
-import org.sensorhub.impl.service.sweapi.ServiceErrors;
-import org.sensorhub.impl.service.sweapi.resource.RequestContext;
-import org.sensorhub.impl.service.sweapi.resource.ResourceFormat;
 
 
 public class HomePageHandler extends BaseHandler
@@ -60,21 +61,21 @@ public class HomePageHandler extends BaseHandler
     @Override
     public void doPost(RequestContext ctx) throws InvalidRequestException, IOException, SecurityException
     {
-        ServiceErrors.unsupportedOperation("");
+        throw ServiceErrors.unsupportedOperation("");
     }
     
 
     @Override
     public void doPut(RequestContext ctx) throws InvalidRequestException, IOException, SecurityException
     {
-        ServiceErrors.unsupportedOperation("");
+        throw ServiceErrors.unsupportedOperation("");
     }
     
 
     @Override
     public void doDelete(RequestContext ctx) throws InvalidRequestException, IOException, SecurityException
     {
-        ServiceErrors.unsupportedOperation("");
+        throw ServiceErrors.unsupportedOperation("");
     }
 
 }

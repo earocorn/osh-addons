@@ -5,6 +5,7 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import org.sensorhub.api.common.IdEncoders;
 import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.impl.module.ModuleRegistry;
 import org.sensorhub.impl.service.consys.resource.RequestContext;
@@ -24,7 +25,7 @@ public class ModuleBindingJson extends ResourceBindingJson<String, ModuleConfig>
     protected final Gson gson;
     protected final ModuleRegistry registry;
 
-    protected ModuleBindingJson(RequestContext ctx, IdEncoders idEncoders, boolean forReading, ModuleRegistry registry) throws IOException {
+    public ModuleBindingJson(RequestContext ctx, IdEncoders idEncoders, boolean forReading, ModuleRegistry registry) throws IOException {
         super(ctx, idEncoders, forReading);
 
         this.gson = new ModuleConfigUtil().gson;
@@ -85,6 +86,18 @@ public class ModuleBindingJson extends ResourceBindingJson<String, ModuleConfig>
 
     public void serializeConfig(ModuleConfig config) throws IOException {
         gson.toJson(config, ModuleConfig.class, writer);
+        writer.flush();
+    }
+
+    public void serializeProvider(IModuleProvider moduleProvider) throws IOException {
+        writer.beginObject();
+        writer.name("moduleClass").value(moduleProvider.getModuleClass().getCanonicalName());
+        writer.name("configClass").value(moduleProvider.getModuleConfigClass().getCanonicalName());
+        writer.name("name").value(moduleProvider.getModuleName());
+        writer.name("version").value(moduleProvider.getModuleVersion());
+        writer.name("description").value(moduleProvider.getModuleDescription());
+        writer.name("vendor").value(moduleProvider.getProviderName());
+        writer.endObject();
         writer.flush();
     }
 

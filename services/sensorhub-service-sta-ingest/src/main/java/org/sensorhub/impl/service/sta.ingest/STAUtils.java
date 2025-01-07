@@ -182,7 +182,7 @@ public class STAUtils {
     {
         SWEBuilders.DataComponentBuilder<? extends SWEBuilders.DataComponentBuilder<?,?>, ? extends DataComponent> comp = null;
 
-        if (checkDefinition(IObservation.OBS_TYPE_MEAS, obsType))
+        if (checkDefinition(IObservation.OBS_TYPE_MEAS, obsType) && !(uom.getName().contains("video")))
         {
             comp = fac.createQuantity();
 

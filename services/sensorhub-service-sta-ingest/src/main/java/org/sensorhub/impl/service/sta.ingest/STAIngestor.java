@@ -101,7 +101,7 @@ public class STAIngestor
                     e.printStackTrace();
                 }
 
-                var datastreams = thing.datastreams().query().list();
+                var datastreams = thing.datastreams().query().top(100).list();
                 Iterator<Datastream> datastreamIterator = datastreams.fullIterator();
 
                 Map<Id<?>, SensorData> smlSensorMap = new HashMap<>();

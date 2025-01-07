@@ -28,16 +28,8 @@ public class ModuleHandler extends ModuleBaseResourceHandler {
         this.loadedModules = registry.getLoadedModules();
         var installedModules = registry.getInstalledModuleTypes();
         this.availableModuleTypes = new HashMap<>();
-        for(var i : installedModules) {
-//            var moduleName = i.getModuleName();
-//            var moduleClass = i.getModuleClass();
-//            var moduleVersion = i.getModuleVersion();
-//            var config = i.getModuleConfigClass();
-//            var className = moduleClass.getName();
-//            var module = moduleClass.getModule();
-//            var configFields = config.getFields();
+        for(var i : installedModules)
             availableModuleTypes.put(i.getModuleName(), i);
-        }
     }
 
     protected ModuleBindingJson getBinding(RequestContext ctx, boolean forReading) throws IOException {

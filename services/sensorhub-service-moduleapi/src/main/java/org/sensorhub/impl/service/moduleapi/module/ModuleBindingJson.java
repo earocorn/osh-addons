@@ -73,11 +73,42 @@ public class ModuleBindingJson extends ResourceBindingJson<String, ModuleConfig>
             writer.name("state").value(module.getCurrentState().name());
             writer.name("statusMessage").value(module.getStatusMessage() != null ? module.getStatusMessage() : "NONE");
             writer.name("latestError").value(module.getCurrentError() != null ? module.getCurrentError().getMessage() : "NONE");
+
+            if(showLinks)
+                writeLinks(writer);
+
             writer.endObject();
             writer.flush();
         } catch (SensorHubException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void writeLinks(JsonWriter writer) throws IOException {
+        writer.name("links").beginArray();
+
+        writer.beginObject();
+        writer.name("rel").value("modules");
+        writer.name("type").value("application/json");
+        writer.name("title").value("Currently loaded modules in this OpenSensorHub node");
+        writer.name("href").value(ctx.getApiRootURL() + "/modules");
+        writer.endObject();
+
+        writer.beginObject();
+        writer.name("rel").value("types");
+        writer.name("type").value("application/json");
+        writer.name("title").value("All installed module types, as well as modules available via OSGi bundles");
+        writer.name("href").value(ctx.getApiRootURL() + "/types");
+        writer.endObject();
+
+        writer.beginObject();
+        writer.name("rel").value("templates");
+        writer.name("type").value("application/json");
+        writer.name("title").value("Default module configurations for currently loaded modules");
+        writer.name("href").value(ctx.getApiRootURL() + "/templates");
+        writer.endObject();
+
+        writer.endArray();
     }
 
     public void serialize(ModuleConfig module) throws IOException {

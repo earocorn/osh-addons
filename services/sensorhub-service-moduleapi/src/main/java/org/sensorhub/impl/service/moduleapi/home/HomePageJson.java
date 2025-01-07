@@ -58,23 +58,24 @@ public class HomePageJson extends ResourceBindingJson<Long, ModuleApiServiceConf
         writer.name("links").beginArray();
         
         writer.beginObject();
-        writer.name("rel").value("service-desc");
-        writer.name("type").value("application/vnd.oai.openapi;version=3.0");
-        writer.name("title").value("Definition of the API in OpenAPI 3.0");
+        writer.name("rel").value("modules");
+        writer.name("type").value("application/json");
+        writer.name("title").value("Currently loaded modules in this OpenSensorHub node");
+        writer.name("href").value(ctx.getApiRootURL() + "/modules");
         writer.endObject();
         
         writer.beginObject();
-        writer.name("rel").value("conformance");
+        writer.name("rel").value("types");
         writer.name("type").value("application/json");
-        writer.name("title").value("OGC API conformance classes implemented by this server");
-        writer.name("href").value(ctx.getApiRootURL() + "/conformance");
+        writer.name("title").value("All installed module types, as well as modules available via OSGi bundles");
+        writer.name("href").value(ctx.getApiRootURL() + "/types");
         writer.endObject();
-        
+
         writer.beginObject();
-        writer.name("rel").value("systems");
+        writer.name("rel").value("templates");
         writer.name("type").value("application/json");
-        writer.name("title").value("Data collections available on this server");
-        writer.name("href").value(ctx.getApiRootURL() + "/collections");
+        writer.name("title").value("Default module configurations for currently loaded modules");
+        writer.name("href").value(ctx.getApiRootURL() + "/templates");
         writer.endObject();
         
         writer.endArray();

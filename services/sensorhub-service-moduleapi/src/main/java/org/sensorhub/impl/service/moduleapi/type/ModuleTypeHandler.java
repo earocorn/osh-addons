@@ -1,19 +1,20 @@
-package org.sensorhub.impl.service.moduleapi.template;
+package org.sensorhub.impl.service.moduleapi.type;
 
-import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.module.IModuleProvider;
-import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.impl.module.ModuleRegistry;
 import org.sensorhub.impl.service.consys.ServiceErrors;
-import org.sensorhub.impl.service.moduleapi.ModuleBaseResourceHandler;
 import org.sensorhub.impl.service.consys.resource.RequestContext;
+import org.sensorhub.impl.service.moduleapi.ModuleBaseResourceHandler;
 import org.sensorhub.impl.service.moduleapi.module.ModuleBindingJson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ModuleTypeHandler extends ModuleBaseResourceHandler {
 
@@ -28,6 +29,21 @@ public class ModuleTypeHandler extends ModuleBaseResourceHandler {
         for (IModuleProvider i : registry.getInstalledModuleTypes()) {
             modulesMap.put(i.getModuleClass().getCanonicalName(), i);
         }
+
+//        var osgiCtx = registry.getParentHub().getOsgiContext();
+//
+//        if(osgiCtx == null)
+//            return;
+//
+//        try {
+//            // TODO: Query osgi manifest
+//            var ref = osgiCtx.getServiceReference(RepositoryAdmin.class);
+//            var repo = osgiCtx.getService(ref);
+//            var resources = repo.discoverResources("(symbolicname=*)");
+//            // TODO: Show OSGi modules available for download
+//        } catch (InvalidSyntaxException e) {
+//            throw new RuntimeException(e);
+//        }
     }
 
     protected ModuleBindingJson getBinding(RequestContext ctx, boolean forReading) throws IOException {
@@ -35,17 +51,44 @@ public class ModuleTypeHandler extends ModuleBaseResourceHandler {
     }
 
     /**
-     * List all available module configuration templates
+     * List all available module types
      * @param ctx
      * @throws IOException
      */
     @Override
     protected void list(RequestContext ctx) throws IOException {
         var binding = getBinding(ctx, false);
+
+        /*
+        differentiate between installed modules
+        and modules available via OSGi
+        {
+            "installed" : [],
+            "osgi": []
+        }
+         */
+
         binding.startCollection();
 
-        for(Map.Entry<String, IModuleProvider> entry : modulesMap.entrySet())
-            binding.serializeProvider(entry.getValue());
+        var allModules = modulesMap.values();
+
+        Collection<IModuleProvider> filteredModules;
+        if(!ctx.getParameterMap().isEmpty()) {
+            var nameParam = ctx.getParameter("name");
+            var versionParam = ctx.getParameter("version");
+            var vendorParam = ctx.getParameter("vendor");
+
+            filteredModules = allModules.stream().filter(moduleProvider -> (
+                    (nameParam == null || moduleProvider.getModuleName().contains(nameParam)) &&
+                    (versionParam == null || moduleProvider.getModuleVersion().contains(versionParam)) &&
+                    (vendorParam == null || moduleProvider.getProviderName().contains(vendorParam))
+            )).collect(Collectors.toList());
+        } else {
+            filteredModules = new ArrayList<>(allModules);
+        }
+
+        for(IModuleProvider moduleProvider : filteredModules)
+            binding.serializeProvider(moduleProvider);
 
         binding.endCollection();
     }

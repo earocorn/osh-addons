@@ -28,6 +28,7 @@ import org.sensorhub.impl.service.moduleapi.module.ControlHandler;
 import org.sensorhub.impl.service.moduleapi.module.ModuleHandler;
 import org.sensorhub.impl.service.consys.RestApiService;
 import org.sensorhub.impl.service.moduleapi.template.TemplateHandler;
+import org.sensorhub.impl.service.moduleapi.type.ModuleTypeHandler;
 import org.sensorhub.utils.NamedThreadFactory;
 
 
@@ -92,6 +93,9 @@ public class ModuleApiService extends AbstractHttpServiceModule<ModuleApiService
 
         var templateHandler = new TemplateHandler(registry);
         rootHandler.addSubResource(templateHandler);
+
+        var moduleTypeHandler = new ModuleTypeHandler(registry);
+        rootHandler.addSubResource(moduleTypeHandler);
         
         // deploy servlet
         servlet = new ModuleApiServlet(this, (ModuleApiSecurity) securityHandler, rootHandler, getLogger());

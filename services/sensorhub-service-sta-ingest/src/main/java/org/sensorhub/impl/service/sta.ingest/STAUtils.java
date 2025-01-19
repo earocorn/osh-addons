@@ -46,10 +46,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class STAUtils {
 
@@ -178,11 +175,32 @@ public class STAUtils {
                 .replace("]", "");
     }
 
+    private static Set<String> TW_SPECIAL_CASES = new HashSet<>() {{
+        add("video");
+        add("videostream");
+        add("time");
+        add("pollutant");
+        add("status");
+        add("weather");
+        add("na");
+        add("視訊監測影格照片");
+    }};
+
     protected static DataComponent toComponent(String obsType, ObservedProperty obsProp, UnitOfMeasurement uom)
     {
         SWEBuilders.DataComponentBuilder<? extends SWEBuilders.DataComponentBuilder<?,?>, ? extends DataComponent> comp = null;
 
-        if (checkDefinition(IObservation.OBS_TYPE_MEAS, obsType) && !(uom.getName().contains("video")))
+        boolean test = TW_SPECIAL_CASES.contains(uom.getName().toLowerCase());
+        if(test) {
+            var name = uom.getName();
+            var obs = obsProp.getDefinition();
+            var uomDef = uom.getDefinition();
+        }
+
+        if (checkDefinition(IObservation.OBS_TYPE_MEAS, obsType)
+                && !(TW_SPECIAL_CASES.contains(uom.getName().toLowerCase()))
+                && !(TW_SPECIAL_CASES.contains(obsProp.getName().toLowerCase()))
+        )
         {
             comp = fac.createQuantity();
 

@@ -47,6 +47,9 @@ public class FFMPEGConfig extends SensorConfig {
 
     public PositionConfig positionConfig = new PositionConfig();
 
+    @DisplayInfo(label = "PTZ Command URL", desc = "URL to send ptz commands")
+    public String ptzCommandUrl = "http://127.0.0.1:8000/ptz";
+
     @Override
     public PositionConfig.LLALocation getLocation()
     {

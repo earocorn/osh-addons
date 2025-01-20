@@ -40,6 +40,8 @@ public class FFMPEGSensor extends FFMPEGSensorBase<FFMPEGConfig> {
     @Override
     protected void doStart() throws SensorHubException {
     	super.doStart();
+        ptzControl = new PTZControl("ptzControl", this);
+        ptzControl.init();
 
     	// Start up the background thread if it's not already going. Normally doInit() will have just been called, so
     	// this is redundant (but harmless). But if the user has stopped the sensor and re-started it, then this call

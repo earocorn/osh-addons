@@ -15,10 +15,10 @@ Developer are Copyright (C) 2014 the Initial Developer. All Rights Reserved.
 
 package org.sensorhub.impl.sensor.fakeweather;
 
+import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.fakeweather.FakeWeatherOutput;
 import org.sensorhub.impl.sensor.fakeweather.FakeWeatherSensor;
-import org.sensorhub.api.sensor.SensorDataEvent;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -51,7 +51,7 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
     
     public FakeWeatherOutput(FakeWeatherSensor parentSensor)
     {
-        super(parentSensor);
+        super(parentSensor.getName(), parentSensor);
     }
 
 
@@ -123,7 +123,7 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
         // update latest record and send event
         latestRecord = dataBlock;
         latestRecordTime = System.currentTimeMillis();
-        eventHandler.publishEvent(new SensorDataEvent(latestRecordTime, FakeWeatherOutput.this, dataBlock));        
+        eventHandler.publish(new DataEvent(latestRecordTime, FakeWeatherOutput.this, dataBlock));
     }
     
     
@@ -149,9 +149,7 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
         
         timer.scheduleAtFixedRate(task, 0, (long)(getAverageSamplingPeriod()*1000));        
     }
-
-
-    @Override
+    
     protected void stop()
     {
         if (timer != null)

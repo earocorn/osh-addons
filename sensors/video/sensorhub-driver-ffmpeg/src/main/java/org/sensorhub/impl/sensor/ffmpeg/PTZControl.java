@@ -8,6 +8,7 @@ import org.sensorhub.api.command.CommandException;
 import org.sensorhub.api.command.ICommandData;
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.impl.sensor.AbstractSensorControl;
+import org.sensorhub.impl.sensor.ffmpeg.config.FFMPEGConfig;
 import org.sensorhub.impl.sensor.videocam.VideoCamHelper;
 
 import java.io.IOException;
@@ -19,7 +20,7 @@ import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 
-public class PTZControl extends AbstractSensorControl<FFMPEGSensor> {
+public class PTZControl extends AbstractSensorControl<FFMPEGSensorBase> {
 
     DataRecord commandData;
 
@@ -31,14 +32,14 @@ public class PTZControl extends AbstractSensorControl<FFMPEGSensor> {
     double minZoom = 1.0;
     double maxZoom = 9999;
 
-    protected PTZControl(String name, FFMPEGSensor parentSensor) {
+    protected PTZControl(String name, FFMPEGSensorBase parentSensor) {
         super(name, parentSensor);
-
     }
 
     public void init() {
         VideoCamHelper videoCamHelper = new VideoCamHelper();
         commandData = videoCamHelper.newPtzOutput("ptzControl", minPan, maxPan, minTilt, maxTilt, minZoom, maxZoom);
+        commandData.removeComponent("time");
     }
 
     @Override
@@ -51,12 +52,14 @@ public class PTZControl extends AbstractSensorControl<FFMPEGSensor> {
         double zoom = commandMsg.getComponent("zoomFactor").getData().getDoubleValue();
 
         try {
-            URL url = new URL(parentSensor.getConfiguration().ptzCommandUrl);
+            var config = (FFMPEGConfig) parentSensor.getConfiguration();
+            URL url = new URL(config.ptzCommandUrl);
             HttpURLConnection con = (HttpURLConnection)url.openConnection();
             con.setRequestMethod("POST");
             con.setRequestProperty("Content-Type", "application/json");
             con.setDoOutput(true);
-            String payload = "{\"pan\": " + pan + ", \"tilt\": " + tilt + ", \"zoom\": " + zoom + "}";
+            String payload = "{ \"pan\": " + pan + ", \"tilt\": " + tilt + ", \"zoom\": " + zoom + " }";
+            System.out.println(payload);
             byte[] out = payload.getBytes(StandardCharsets.UTF_8);
             OutputStream stream = con.getOutputStream();
             stream.write(out);

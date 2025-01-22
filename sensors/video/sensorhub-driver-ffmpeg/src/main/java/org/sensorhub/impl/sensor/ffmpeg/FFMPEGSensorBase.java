@@ -92,7 +92,9 @@ public abstract class FFMPEGSensorBase<FFMPEGconfigType extends FFMPEGConfig> ex
         // We also have to clear out the video output since its settings may have changed (based on having a new input
         // video, for example).
         videoOutput = null;
-        ptzControl = null;
+        ptzControl = new PTZControl("ptzControl", this);
+        this.addControlInput(ptzControl);
+        ptzControl.init();
 
         // The non-on-demand subclass will override this method to also open up the stream to get video frame size.
 

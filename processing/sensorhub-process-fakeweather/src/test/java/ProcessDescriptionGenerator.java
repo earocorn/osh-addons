@@ -38,7 +38,7 @@ public class ProcessDescriptionGenerator {
     public void generateDescJSON() throws ProcessException, IOException {
         SMLJsonBindings jsonBindings = new SMLJsonBindings();
         JsonWriter writer = new JsonWriter(new OutputStreamWriter(System.out));
-        writer.setIndent("");
+        writer.setIndent("\t");
         writer.beginObject();
         jsonBindings.writeAggregateProcessProperties(writer, generateDescription());
         writer.endObject();
@@ -47,7 +47,6 @@ public class ProcessDescriptionGenerator {
 
     @Test
     public void generateDescXML() throws ProcessException, XMLWriterException {
-
         helper.writeProcess(System.out, generateDescription(), true);
     }
 

@@ -74,7 +74,12 @@ public class FakeWeatherOutput extends AbstractSensorOutput<FakeWeatherSensor>
         
         // add time, temperature, pressure, wind speed and wind direction fields
         weatherData.addComponent("time", fac.newTimeStampIsoUTC());
-        weatherData.addComponent("temperature", fac.newQuantity(SWEHelper.getPropertyUri("AirTemperature"), "Air Temperature", null, "Cel"));
+        weatherData.addComponent("temperature",
+                fac.newQuantity(
+                SWEHelper.getPropertyUri("AirTemperature"),
+                "Air Temperature",
+                null,
+                "Cel"));
         weatherData.addComponent("pressure", fac.newQuantity(SWEHelper.getPropertyUri("AtmosphericPressure"), "Air Pressure", null, "hPa"));
         weatherData.addComponent("windSpeed", fac.newQuantity(SWEHelper.getPropertyUri("WindSpeed"), "Wind Speed", null, "m/s"));
         

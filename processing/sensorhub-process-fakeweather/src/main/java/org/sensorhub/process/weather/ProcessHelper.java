@@ -1,5 +1,6 @@
 package org.sensorhub.process.weather;
 
+import com.google.gson.stream.JsonWriter;
 import net.opengis.gml.v32.impl.ReferenceImpl;
 import net.opengis.sensorml.v20.AbstractProcess;
 import net.opengis.sensorml.v20.AggregateProcess;
@@ -14,22 +15,16 @@ import org.vast.process.ProcessException;
 import org.vast.sensorML.*;
 import org.vast.xml.XMLWriterException;
 
+import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 
 public class ProcessHelper extends SMLUtils {
-    AggregateProcessImpl aggregateProcess;
-    ReferenceImpl controlType;
-    ReferenceImpl sourceType;
+    ReferenceImpl controlType = new ReferenceImpl("urn:osh:process:datasink:commandstream");
+    ReferenceImpl sourceType = new ReferenceImpl("urn:osh:process:datasource:stream");
+
     public ProcessHelper() {
         super(V2_0);
-
-        controlType = new ReferenceImpl("urn:osh:process:datasink:commandstream");
-        sourceType = new ReferenceImpl("urn:osh:process:datasource:stream");
-
-        aggregateProcess = new AggregateProcessImpl();
-    }
-    public ProcessHelper(SMLStaxBindings staxBindings) {
-        super(staxBindings);
     }
 
     /**
@@ -37,42 +32,46 @@ public class ProcessHelper extends SMLUtils {
      *
      * @param outputStream
      */
-    public void writeXML(OutputStream outputStream) throws XMLWriterException {
+    public void writeXML(AggregateProcess aggregateProcess, OutputStream outputStream) throws XMLWriterException {
         writeProcess(outputStream, aggregateProcess, true);
+    }
+
+    public void writeJSON(AggregateProcess aggregateProcess, OutputStream outputStream) throws IOException {
+        SMLJsonBindings jsonBindings = new SMLJsonBindings();
+        JsonWriter writer = new JsonWriter(new OutputStreamWriter(outputStream));
+        writer.setIndent("");
+        writer.beginObject();
+        writer.name("type").value("AggregateProcess");
+        jsonBindings.writeAggregateProcessProperties(writer, aggregateProcess);
+        writer.endObject();
+        writer.flush();
     }
 
     public ProcessChainBuilder createProcessChain() {
         return new ProcessChainBuilder();
     }
 
-    //        helper.createProcessChain()
-//                // auto generate UUID
-//                .name("Process Chain")
-//                // Uid for inner aggregate process
-//                .uid("urn:osh:process:weather")
-//                .addDataSource("source0", "urn:osh:sensor:fakeweather:001")
-//                .addOutputList(outputs)
-//                //.addOutput("output1", output)
-//                .addProcess("process0", processImplementation)
-//                .addConnection("components/process0/outputs/output1",
-//                        "outputs/output1")
-//                .addConnection("", "")
-    //            .validate()
-//                .build();
-
     public class ProcessChainBuilder {
         ProcessHelper helper;
+        AggregateProcessImpl aggregateProcess;
+
         ProcessChainBuilder() {
             helper = new ProcessHelper();
+            aggregateProcess = new AggregateProcessImpl();
         }
 
         public ProcessChainBuilder uid(String uid) {
-            helper.aggregateProcess.setUniqueIdentifier(uid);
+            aggregateProcess.setUniqueIdentifier(uid);
             return this;
         }
 
         public ProcessChainBuilder name(String name) {
-            helper.aggregateProcess.setName(name);
+            aggregateProcess.setName(name);
+            return this;
+        }
+
+        public ProcessChainBuilder description(String description) {
+            aggregateProcess.setDescription(description);
             return this;
         }
 
@@ -82,12 +81,12 @@ public class ProcessHelper extends SMLUtils {
          * @param output DataRecord that describes output
          */
         public ProcessChainBuilder addOutput(DataRecord output) {
-            helper.aggregateProcess.addOutput(output.getName(), output);
+            aggregateProcess.addOutput(output.getName(), output);
             return this;
         }
 
         public ProcessChainBuilder addOutput(String name, DataRecord output) {
-            helper.aggregateProcess.addOutput(name, output);
+            aggregateProcess.addOutput(name, output);
             return this;
         }
 
@@ -99,7 +98,7 @@ public class ProcessHelper extends SMLUtils {
         public ProcessChainBuilder addOutputList(IOPropertyList outputs) {
             for (AbstractSWEIdentifiable output : outputs) {
                 DataComponent outputData = (DataComponent) output;
-                helper.aggregateProcess.addOutput(outputData.getName(), outputData);
+                aggregateProcess.addOutput(outputData.getName(), outputData);
             }
             return this;
         }
@@ -110,12 +109,12 @@ public class ProcessHelper extends SMLUtils {
          * @param input DataRecord that describes input
          */
         public ProcessChainBuilder addInput(DataRecord input) {
-            helper.aggregateProcess.addInput(input.getName(), input);
+            aggregateProcess.addInput(input.getName(), input);
             return this;
         }
 
         public ProcessChainBuilder addInput(String name, DataRecord input) {
-            helper.aggregateProcess.addInput(name, input);
+            aggregateProcess.addInput(name, input);
             return this;
         }
 
@@ -129,7 +128,7 @@ public class ProcessHelper extends SMLUtils {
             SimpleProcessImpl execProcess = new SimpleProcessImpl();
             execProcess.setExecutableImpl(process);
 
-            helper.aggregateProcess.addComponent(name, execProcess);
+            aggregateProcess.addComponent(name, execProcess);
             return this;
         }
 
@@ -145,7 +144,7 @@ public class ProcessHelper extends SMLUtils {
             settings.addSetValue("parameters/producerURI", systemUID);
             source.setConfiguration(settings);
 
-            helper.aggregateProcess.addComponent(name, source);
+            aggregateProcess.addComponent(name, source);
             return this;
         }
 
@@ -164,7 +163,7 @@ public class ProcessHelper extends SMLUtils {
 
             control.setConfiguration(settings);
 
-            helper.aggregateProcess.addComponent(name, control);
+            aggregateProcess.addComponent(name, control);
             return this;
         }
 
@@ -175,12 +174,12 @@ public class ProcessHelper extends SMLUtils {
          * @param destination String of destination of connection
          */
         public ProcessChainBuilder addConnection(String source, String destination) {
-            helper.aggregateProcess.addConnection(new LinkImpl(source, destination));
+            aggregateProcess.addConnection(new LinkImpl(source, destination));
             return this;
         }
 
         public AggregateProcess build() {
-            return helper.aggregateProcess;
+            return aggregateProcess;
         }
 
     }

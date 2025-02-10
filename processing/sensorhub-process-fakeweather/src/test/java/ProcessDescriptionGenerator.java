@@ -15,15 +15,16 @@ import java.io.OutputStreamWriter;
 
 public class ProcessDescriptionGenerator {
     SWEFactory fac = new SWEFactory();
-    ProcessHelper helper = new ProcessHelper();
+    ProcessHelper processHelper = new ProcessHelper();
 
     public AggregateProcess generateDescription() throws ProcessException {
         WeatherProcess p1 = new WeatherProcess();
         p1.init();
 
-        return helper.createProcessChain()
+        return processHelper.createProcessChain()
                 .name("Process Chain")
                 .uid("urn:osh:process:weather")
+                .description("Example process chain that converts units from the Simulated Weather Sensor")
                 .addDataSource("source0", "urn:osh:sensor:simweather:001")
                 .addOutputList(p1.getOutputList())
                 .addProcess("process0", p1)
@@ -36,19 +37,12 @@ public class ProcessDescriptionGenerator {
 
     @Test
     public void generateDescJSON() throws ProcessException, IOException {
-        SMLJsonBindings jsonBindings = new SMLJsonBindings();
-        JsonWriter writer = new JsonWriter(new OutputStreamWriter(System.out));
-        writer.setIndent("");
-        writer.beginObject();
-        jsonBindings.writeAggregateProcessProperties(writer, generateDescription());
-        writer.endObject();
-        writer.flush();
+        processHelper.writeJSON(generateDescription(), System.out);
     }
 
     @Test
     public void generateDescXML() throws ProcessException, XMLWriterException {
-
-        helper.writeProcess(System.out, generateDescription(), true);
+        processHelper.writeXML(generateDescription(), System.out);
     }
 
 }

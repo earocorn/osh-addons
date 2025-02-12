@@ -1,4 +1,4 @@
-package org.sensorhub.process.weather;
+package com.botts.impl.process.helpers;
 
 import com.google.gson.stream.JsonWriter;
 import net.opengis.gml.v32.impl.ReferenceImpl;
@@ -20,30 +20,32 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
 public class ProcessHelper extends SMLUtils {
-    ReferenceImpl controlType = new ReferenceImpl("urn:osh:process:datasink:commandstream");
-    ReferenceImpl sourceType = new ReferenceImpl("urn:osh:process:datasource:stream");
 
+    SMLJsonBindings jsonBindings = new SMLJsonBindings();
     public ProcessHelper() {
         super(V2_0);
     }
 
     /**
-     * Prints XML process description to output stream
+     * Prints XML process description of process to output stream
      *
      * @param outputStream
      */
-    public void writeXML(AggregateProcess aggregateProcess, OutputStream outputStream) throws XMLWriterException {
-        writeProcess(outputStream, aggregateProcess, true);
+    public void writeProcessXML(AbstractProcess process, OutputStream outputStream) throws XMLWriterException {
+        writeProcess(outputStream, process, true);
     }
 
-    public void writeJSON(AggregateProcess aggregateProcess, OutputStream outputStream) throws IOException {
-        SMLJsonBindings jsonBindings = new SMLJsonBindings();
+    /**
+     * Prints JSON process description of process to output stream
+     * @param process
+     *
+     * @param outputStream
+     * @throws IOException
+     */
+    public void writeProcessJSON(AbstractProcess process, OutputStream outputStream) throws IOException {
         JsonWriter writer = new JsonWriter(new OutputStreamWriter(outputStream));
         writer.setIndent("");
-        writer.beginObject();
-        writer.name("type").value("AggregateProcess");
-        jsonBindings.writeAggregateProcessProperties(writer, aggregateProcess);
-        writer.endObject();
+        jsonBindings.writeDescribedObject(writer, process);
         writer.flush();
     }
 
@@ -52,6 +54,8 @@ public class ProcessHelper extends SMLUtils {
     }
 
     public class ProcessChainBuilder {
+        ReferenceImpl controlType = new ReferenceImpl("urn:osh:process:datasink:commandstream");
+        ReferenceImpl sourceType = new ReferenceImpl("urn:osh:process:datasource:stream");
         ProcessHelper helper;
         AggregateProcessImpl aggregateProcess;
 
@@ -184,11 +188,11 @@ public class ProcessHelper extends SMLUtils {
 
     }
 
-    public void initProcessChain(AbstractProcess processChain, boolean useThreads, Logger logger) throws ProcessException, SMLException {
-        AggregateProcessImpl chain = (AggregateProcessImpl)this.getExecutableInstance((AggregateProcessImpl)processChain, useThreads);
-        chain.setInstanceName("chain");
-        chain.setParentLogger(logger);
-        chain.init();
-    }
+//    public void initProcessChain(AbstractProcess processChain, boolean useThreads, Logger logger) throws ProcessException, SMLException {
+//        AggregateProcessImpl chain = (AggregateProcessImpl)this.getExecutableInstance((AggregateProcessImpl)processChain, useThreads);
+//        chain.setInstanceName("chain");
+//        chain.setParentLogger(logger);
+//        chain.init();
+//    }
 
 }

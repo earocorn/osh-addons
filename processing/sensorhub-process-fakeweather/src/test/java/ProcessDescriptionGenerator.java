@@ -1,17 +1,12 @@
-import com.google.gson.stream.JsonWriter;
+import com.botts.impl.process.helpers.ProcessHelper;
 import net.opengis.sensorml.v20.AggregateProcess;
 import org.junit.Test;
-import org.sensorhub.process.weather.ProcessHelper;
 import org.sensorhub.process.weather.WeatherProcess;
 import org.vast.data.SWEFactory;
 import org.vast.process.ProcessException;
-import org.vast.sensorML.AggregateProcessImpl;
-import org.vast.sensorML.SMLBuilders;
-import org.vast.sensorML.SMLJsonBindings;
 import org.vast.xml.XMLWriterException;
 
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 
 public class ProcessDescriptionGenerator {
     SWEFactory fac = new SWEFactory();
@@ -37,12 +32,14 @@ public class ProcessDescriptionGenerator {
 
     @Test
     public void generateDescJSON() throws ProcessException, IOException {
-        processHelper.writeJSON(generateDescription(), System.out);
+        // Write JSON process description to System.out
+        processHelper.writeProcessJSON(generateDescription(), System.out);
     }
 
     @Test
     public void generateDescXML() throws ProcessException, XMLWriterException {
-        processHelper.writeXML(generateDescription(), System.out);
+        // Write XML process description to System.out
+        processHelper.writeProcess(System.out, generateDescription(), true);
     }
 
 }

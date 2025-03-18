@@ -3,6 +3,7 @@ package org.sensorhub.impl.service.moduleapi.template;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.api.module.ModuleConfigBase;
 import org.sensorhub.impl.module.ModuleRegistry;
 import org.sensorhub.impl.service.consys.ServiceErrors;
 import org.sensorhub.impl.service.moduleapi.ModuleBaseResourceHandler;
@@ -20,7 +21,7 @@ public class TemplateHandler extends ModuleBaseResourceHandler {
     public static final String[] NAMES = { "templates" };
     private static final Logger log = LoggerFactory.getLogger(TemplateHandler.class);
     ModuleRegistry registry;
-    Map<String, ModuleConfig> modulesMap;
+    Map<String, ModuleConfigBase> modulesMap;
 
     public TemplateHandler(ModuleRegistry registry) {
         this.registry = registry;
@@ -50,8 +51,8 @@ public class TemplateHandler extends ModuleBaseResourceHandler {
         var binding = getBinding(ctx, false);
         binding.startCollection();
 
-        for(Map.Entry<String, ModuleConfig> entry : modulesMap.entrySet())
-            binding.serializeConfig(entry.getValue());
+        for(Map.Entry<String, ModuleConfigBase> entry : modulesMap.entrySet())
+            binding.serializeConfig((ModuleConfig) entry.getValue());
 
         binding.endCollection();
     }
@@ -69,7 +70,7 @@ public class TemplateHandler extends ModuleBaseResourceHandler {
             throw ServiceErrors.notFound(objectClass);
 
         var binding = getBinding(ctx, false);
-        binding.serializeConfig(config);
+        binding.serializeConfig((ModuleConfig) config);
     }
 
     @Override

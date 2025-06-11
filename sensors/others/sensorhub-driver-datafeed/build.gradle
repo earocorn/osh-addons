@@ -1,0 +1,32 @@
+description = 'Data Feed'
+ext.details = "A driver for capturing various data feeds"
+version = '1.0.0'
+
+dependencies {
+    implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    implementation project(':sensorhub-comm-mqtt')
+
+    testImplementation('junit:junit:4.13.1')
+}
+
+test {
+    useJUnit()
+}
+
+osgi {
+    manifest {
+        attributes ('Bundle-Vendor': 'My Company, Inc.')
+        attributes ('Bundle-Activator': 'com.botts.impl.sensor.datafeed.Activator')
+    }
+}
+
+ext.pom >>= {
+    developers {
+        developer {
+            id 'earocorn'
+            name 'Alex Almanza'
+            organization 'Botts Innovative Research, Inc.'
+            organizationUrl 'https://botts-inc.com'
+        }
+    }
+}

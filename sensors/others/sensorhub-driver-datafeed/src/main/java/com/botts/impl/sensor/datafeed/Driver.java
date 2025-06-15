@@ -11,6 +11,8 @@
  ******************************* END LICENSE BLOCK ***************************/
 package com.botts.impl.sensor.datafeed;
 
+import com.botts.api.sensor.datafeed.parser.IDataParser;
+import com.botts.impl.sensor.datafeed.parser.CSVDataParser;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
@@ -20,6 +22,9 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Reader;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Random;
 
 /**
@@ -38,6 +43,7 @@ public class Driver extends AbstractSensorModule<Config> {
     Thread processingThread;
     volatile boolean doProcessing = true;
     ICommProvider<?> commProvider;
+    IDataParser dataParser;
 
     @Override
     public void doInit() throws SensorHubException {
@@ -60,21 +66,22 @@ public class Driver extends AbstractSensorModule<Config> {
         // init comm provider
         if (commProvider == null)
         {
-            // we need to recreate comm provider here because it can be changed by UI
-            // TODO do that in updateConfig
-            try
-            {
+            try {
+                // we need to recreate comm provider here because it can be changed by UI
+                // TODO do that in updateConfig
                 if (config.commSettings == null)
                     throw new SensorHubException("No communication settings specified");
 
                 var moduleReg = getParentHub().getModuleRegistry();
                 commProvider = (ICommProvider<?>)moduleReg.loadSubModule(config.commSettings, true);
                 commProvider.start();
-            }
-            catch (Exception e)
-            {
+                Class<?> clazz = config.dataParserConfig.getDataParserClass();
+                Constructor<?> constructor = clazz.getConstructor(IDataParser.class);
+                dataParser = (IDataParser) constructor.newInstance(config.dataParserConfig);
+            } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
                 commProvider = null;
-                throw e;
+                dataParser = null;
+                throw new RuntimeException(e);
             }
         }
 
@@ -101,33 +108,17 @@ public class Driver extends AbstractSensorModule<Config> {
         doProcessing = true;
 
         processingThread = new Thread(() -> {
-            while (doProcessing) {
-
-                if (commProvider != null && commProvider.isStarted()) {
-                    try(BufferedReader reader = new BufferedReader(new InputStreamReader(commProvider.getInputStream()))) {
-                        String line;
-                        while ((line = reader.readLine()) != null) {
-                            Object[] data = readData(line);
-                            output.setData(System.currentTimeMillis(), data);
-                        }
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+            if (commProvider != null && commProvider.isStarted()) {
+                try {
+                    dataParser.subscribe(commProvider.getInputStream(), (dataBlock) -> {
+                        output.setData(System.currentTimeMillis(), dataBlock);
+                    });
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
-
             }
         });
         processingThread.start();
-    }
-
-    private Object[] readData(String line) {
-        switch(config.dataFormat) {
-            case CSV -> System.out.println(line);
-            case XML -> System.out.println(line);
-            case JSON -> System.out.println(line);
-        }
-        // TODO: Read data in correct order of data stream mapping
-        return new Object[]{line};
     }
 
     /**

@@ -11,13 +11,10 @@
  ******************************* END LICENSE BLOCK ***************************/
 package com.botts.impl.sensor.datafeed;
 
-import com.botts.impl.sensor.datafeed.data.DataStreamField;
+import com.botts.api.sensor.datafeed.parser.DataParserConfig;
 import org.sensorhub.api.comm.CommProviderConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Configuration settings for the {@link Driver} driver exposed via the OpenSensorHub Admin panel.
@@ -38,20 +35,12 @@ public class Config extends SensorConfig {
      */
     @DisplayInfo.Required
     @DisplayInfo(desc = "Serial number or unique identifier")
-    public String serialNumber = "sensor001";
-
-    public Set<DataStreamField> dataInputFields = new HashSet<DataStreamField>();
+    public String serialNumber = "001";
 
     @DisplayInfo.Required
     @DisplayInfo(label = "Communication Settings")
     public CommProviderConfig<?> commSettings;
 
-    enum DataFormat {
-        CSV,
-        JSON,
-        XML;
-    }
-
-    public DataFormat dataFormat;
+    public DataParserConfig dataParserConfig;
 
 }

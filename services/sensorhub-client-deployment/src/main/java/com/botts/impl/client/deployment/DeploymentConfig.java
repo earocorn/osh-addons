@@ -10,7 +10,7 @@ public class DeploymentConfig {
 
     @DisplayInfo.Required
     @DisplayInfo(label = "Deployment ID")
-    public String id;
+    public String deploymentId;
 
     @DisplayInfo(label = "Deployment Description")
     public String description;

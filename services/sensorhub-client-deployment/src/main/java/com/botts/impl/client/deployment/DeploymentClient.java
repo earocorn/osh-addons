@@ -127,8 +127,8 @@ public class DeploymentClient extends AbstractModule<DeploymentClientConfig>
 
         Deployment deployment = fac.createDeployment()
                 .name(config.deployment.name)
-                .id(config.deployment.id)
-                .uniqueID("urn:osh:deployment:" + config.deployment.id)
+                .id(config.deployment.deploymentId)
+                .uniqueID("urn:osh:deployment:" + config.deployment.deploymentId)
                 .description(description)
                 .build();
 

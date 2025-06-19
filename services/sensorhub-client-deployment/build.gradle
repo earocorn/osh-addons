@@ -1,0 +1,29 @@
+description = 'Deployment Export Client'
+ext.details = 'A client module for exporting OSH data as a SensorML deployment, using the Connected Systems API.'
+version = '1.0.0'
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.sensorhub:sensorhub-service-consys:' + oshCoreVersion
+}
+
+// add info to OSGi manifest
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'Botts Innovative Research, Inc.')
+    attributes('Bundle-Activator': 'com.botts.impl.client.deployment.Activator')
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'earocorn'
+      name 'Alex Almanza'
+      organization 'Botts Innovative Research, Inc.'
+      organizationUrl 'https://www.botts-inc.com'
+    }
+  }
+}
+

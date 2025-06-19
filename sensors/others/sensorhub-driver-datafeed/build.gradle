@@ -4,7 +4,15 @@ version = '1.0.0'
 
 dependencies {
     implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
-    implementation project(':sensorhub-comm-mqtt')
+    implementation 'org.sensorhub:sensorhub-webui-core:' + oshCoreVersion
+    embeddedImpl 'com.vaadin:vaadin-server:8.14.3'
+    embeddedImpl 'com.vaadin:vaadin-push:8.14.3'
+    compileOnly 'com.vaadin:vaadin-client:8.14.3'
+    embeddedImpl 'com.vaadin:vaadin-client-compiled:8.14.3'
+    embeddedImpl 'com.vaadin:vaadin-compatibility-server:8.14.3'
+    compileOnly 'com.vaadin:vaadin-compatibility-client:8.14.3'
+    embeddedImpl 'com.vaadin:vaadin-compatibility-client-compiled:8.14.3'
+    embeddedImpl 'com.vaadin:vaadin-themes:8.14.3'
 
     testImplementation('junit:junit:4.13.1')
 }

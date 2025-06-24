@@ -115,7 +115,7 @@ public class STAUtils {
                 .build();
     }
 
-    protected static DataRecord toSweCommon(Entity<?> entity) throws ServiceFailureException {
+    public static DataRecord toSweCommon(Entity<?> entity) throws ServiceFailureException {
         SWEBuilders.DataRecordBuilder rec = null;
         if(entity instanceof Datastream) {
             Datastream ds = (Datastream)entity;

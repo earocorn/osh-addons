@@ -23,19 +23,24 @@ public class STASubscriber {
     Datastream datastream;
     MqttSubscription mqttSubscription;
     long pollingRate;
+    private boolean useMqtt;
 
-    public STASubscriber(Datastream datastream, long pollingRate) {
+    public STASubscriber(Datastream datastream, long pollingRate, boolean useMqtt) {
         this.datastream = datastream;
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
         this.pollingRate = pollingRate;
+        this.useMqtt = useMqtt;
     }
 
     public void startStream(StreamListener streamListener) {
-        try {
-            logger.info("Attempting to start MQTT subscription on Datastream {}...", datastream.getName());
-            subscribeMQTT(streamListener);
-        } catch (MqttException e) {
-            logger.warn("Error starting MQTT subscription. If MQTT is not configured, ignore this", e);
+        if (useMqtt) {
+            try {
+                logger.info("Attempting to start MQTT subscription on Datastream {}...", datastream.getName());
+                subscribeMQTT(streamListener);
+            } catch (MqttException e) {
+                logger.error("Unable to connect via MQTT", e);
+            }
+        } else {
             logger.info("Attempting to start polling service on Datastream {}...", datastream.getName());
             subscribePoller(streamListener);
         }
@@ -60,7 +65,6 @@ public class STASubscriber {
     }
 
     private void subscribePoller(StreamListener streamListener) {
-        unsubscribePoller();
         // Schedule polling mechanism at configured polling rate
         pollingTask = scheduler.scheduleAtFixedRate(() -> {
             try {

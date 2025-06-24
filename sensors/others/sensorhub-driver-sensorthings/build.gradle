@@ -1,5 +1,5 @@
-description = 'SensorThings Virtual Sensor'
-ext.details = "Driver to capture live data from a SensorThings API"
+description = 'STA Virtual Sensor'
+ext.details = "Driver to capture live data from a SensorThings service"
 version = '1.0.0'
 
 dependencies {

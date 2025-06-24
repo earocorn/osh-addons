@@ -15,23 +15,33 @@
 
 package com.botts.impl.driver.sensorthings;
 
+import com.botts.impl.driver.sensorthings.client.STASubscriber;
+import com.botts.impl.driver.sensorthings.client.STAUtils;
 import de.fraunhofer.iosb.ilt.sta.MqttException;
+import de.fraunhofer.iosb.ilt.sta.ServiceFailureException;
+import de.fraunhofer.iosb.ilt.sta.model.EntityType;
+import de.fraunhofer.iosb.ilt.sta.query.ExpandedEntity;
 import de.fraunhofer.iosb.ilt.sta.service.MqttConfig;
 import de.fraunhofer.iosb.ilt.sta.service.SensorThingsService;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.api.module.ModuleEvent;
 import org.sensorhub.impl.comm.HTTPConfig;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
+import org.vast.data.TextEncodingImpl;
 import org.vast.util.Asserts;
 
+import javax.net.ssl.SSLContext;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 public class STAVirtualSensor extends AbstractSensorModule<STAVirtualSensorConfig> {
 
     SensorThingsService sensorThingsService;
     String staEndpointUrl;
+    protected boolean isMqttEnabled = false;
 
     @Override
     public void setConfiguration(STAVirtualSensorConfig config)
@@ -50,7 +60,9 @@ public class STAVirtualSensor extends AbstractSensorModule<STAVirtualSensorConfi
         if (endpoint.enableTLS)
             scheme = "https";
 
-        String endpointUrl = scheme + "://" + endpoint.remoteHost + ":" + endpoint.remotePort;
+        String endpointUrl = scheme + "://" + endpoint.remoteHost;
+        if (endpoint.remotePort != 80 && endpoint.remotePort != 443)
+            endpointUrl += ":" + endpoint.remotePort;
         if (endpoint.resourcePath != null)
         {
             if (endpoint.resourcePath.charAt(0) != '/')
@@ -63,42 +75,95 @@ public class STAVirtualSensor extends AbstractSensorModule<STAVirtualSensorConfi
 
     @Override
     public void doInit() throws SensorHubException {
-        super.doInit();
-
         Asserts.checkNotNull(config.serialNumber, "config.serialNumber");
         Asserts.checkNotNull(staEndpointUrl, "SensorThings endpoint URL");
+
+        // Only initialize after Datastreams are queried and outputs are registered
+        initAsync = true;
 
         // Generate identifiers
         generateUniqueID("urn:osh:driver:sensorthings:", config.serialNumber);
         generateXmlID("SENSOR_THINGS", config.serialNumber);
 
+        System.setProperty("javax.net.ssl.trustStore", "/Users/alexalmanza/Desktop/truststore.jks");
+        System.setProperty("javax.net.ssl.trustStorePassword", "changeit");
+
         CompletableFuture.runAsync(() -> {
-            if (config.mqttConfig != null) {
-                MqttConfig mqttConfig = new MqttConfig(config.mqttConfig.broker);
+            try {
+                if (config.mqttConfig != null) {
+                    MqttConfig mqttConfig = new MqttConfig(config.mqttConfig.broker);
+                    if (config.mqttConfig.password != null) {
+                        MqttConnectOptions options = new MqttConnectOptions();
+                        options.setUserName(config.mqttConfig.username);
+                        options.setPassword(config.mqttConfig.password.toCharArray());
+                        mqttConfig.setOptions(options);
+                        mqttConfig.setClientId(getUniqueIdentifier());
+                    }
 
-                if (config.mqttConfig.password != null) {
-                    MqttConnectOptions options = new MqttConnectOptions();
-                    options.setUserName(config.mqttConfig.username);
-                    options.setPassword(config.mqttConfig.password.toCharArray());
-                    mqttConfig.setOptions(options);
-                    mqttConfig.setClientId(getUniqueIdentifier());
-                }
-
-                try {
                     sensorThingsService = new SensorThingsService(new URL(staEndpointUrl), mqttConfig);
-                } catch (MalformedURLException | MqttException e) {
-                    throw new RuntimeException(e);
-                }
-            } else {
-                try {
+                    isMqttEnabled = true;
+                } else {
                     sensorThingsService = new SensorThingsService(new URL(staEndpointUrl));
-                } catch (MalformedURLException e) {
-                    throw new RuntimeException(e);
+                    isMqttEnabled = false;
                 }
-            }
 
-            // TODO: Collect datastreams and create outputs
+                for (var configProp : config.observedProperties) {
+                    var obsProps = sensorThingsService
+                            .observedProperties()
+                            .query()
+                            .filter("definition eq '" + configProp + "'")
+                            .expand(EntityType.DATASTREAMS.getName())
+                            .list();
+
+                    var obsPropIterator = obsProps.fullIterator();
+                    int currentNumDatastreams = 0;
+                    while (obsPropIterator.hasNext()) {
+                        var obsProp = obsPropIterator.next();
+                        if (!config.observedProperties.contains(obsProp.getDefinition()))
+                            continue;
+
+                        var relatedDatastreams = obsProp.getDatastreams();
+                        var relatedDatastreamsIterator = relatedDatastreams.fullIterator();
+                        while (relatedDatastreamsIterator.hasNext()) {
+                            if (currentNumDatastreams++ > config.datastreamLimit)
+                                break;
+
+                            var datastream = relatedDatastreamsIterator.next();
+                            var recordStructure = STAUtils.toSweCommon(datastream);
+                            // Use ID to uniquely identify Datastreams as OSH outputs
+                            recordStructure.setName(recordStructure.getName() + datastream.getId());
+                            final STAVirtualSensorOutput output = new STAVirtualSensorOutput(this,
+                                    recordStructure,
+                                    new STASubscriber(datastream,
+                                            config.httpPollRate, isMqttEnabled));
+                            addOutput(output, false);
+                        }
+                    }
+                }
+
+                if (getOutputs().isEmpty())
+                    throw new CompletionException("Requested data is not available from SensorThings API " + staEndpointUrl + ". Please check observed properties are valid.", null);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        })
+        .thenRun(() -> setState(ModuleEvent.ModuleState.INITIALIZED))
+        .exceptionally(e -> {
+            reportError(e.getMessage(), e.getCause());
+            return null;
         });
+    }
+
+    @Override
+    protected void setState(ModuleEvent.ModuleState newState) {
+        super.setState(newState);
+        if (config.autoStart && ModuleEvent.ModuleState.INITIALIZED.equals(getCurrentState())) {
+            try {
+                start();
+            } catch (SensorHubException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     @Override

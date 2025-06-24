@@ -7,6 +7,7 @@ import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.VarRateSensorOutput;
+import org.vast.data.TextEncodingImpl;
 import org.vast.util.Asserts;
 
 public class STAVirtualSensorOutput extends VarRateSensorOutput<STAVirtualSensor> {
@@ -16,10 +17,10 @@ public class STAVirtualSensorOutput extends VarRateSensorOutput<STAVirtualSensor
     STAVirtualSensorConfig config;
     STASubscriber subscriber;
 
-    public STAVirtualSensorOutput(STAVirtualSensor sensor, DataComponent recordStructure, DataEncoding recordEncoding, STASubscriber subscriber) {
+    public STAVirtualSensorOutput(STAVirtualSensor sensor, DataComponent recordStructure, STASubscriber subscriber) {
         super(recordStructure.getName(), sensor, sensor.getConfiguration().httpPollRate);
         this.recordStructure = Asserts.checkNotNull(recordStructure, DataComponent.class);
-        this.recordEncoding = Asserts.checkNotNull(recordEncoding, DataEncoding.class);
+        this.recordEncoding = new TextEncodingImpl();
         this.subscriber = subscriber;
         this.config = sensor.getConfiguration();
     }

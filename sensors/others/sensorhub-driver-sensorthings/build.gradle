@@ -1,0 +1,33 @@
+description = 'SensorThings Virtual Sensor'
+ext.details = "Driver to capture live data from a SensorThings API"
+version = '1.0.0'
+
+dependencies {
+    implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    embeddedImpl 'de.fraunhofer.iosb.ilt:FROST-Client:0.45'
+    testImplementation('junit:junit:4.13.1')
+}
+
+test {
+    useJUnit()
+}
+
+// add info to OSGi manifest
+osgi {
+    manifest {
+        attributes ('Bundle-Vendor': 'Botts Innovative Research, Inc.')
+        attributes ('Bundle-Activator': 'com.botts.impl.driver.sensorthings.Activator')
+    }
+}
+
+// add info to maven pom
+ext.pom >>= {
+    developers {
+        developer {
+            id 'earocorn'
+            name 'Alex Almanza'
+            organization 'Botts Innovative Research, Inc.'
+            organizationUrl 'https://www.botts-inc.com'
+        }
+    }
+}

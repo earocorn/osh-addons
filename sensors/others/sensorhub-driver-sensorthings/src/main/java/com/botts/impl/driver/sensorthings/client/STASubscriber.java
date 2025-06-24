@@ -1,0 +1,90 @@
+package com.botts.impl.driver.sensorthings.client;
+
+import de.fraunhofer.iosb.ilt.sta.MqttException;
+import de.fraunhofer.iosb.ilt.sta.ServiceFailureException;
+import de.fraunhofer.iosb.ilt.sta.model.Datastream;
+import de.fraunhofer.iosb.ilt.sta.model.EntityType;
+import de.fraunhofer.iosb.ilt.sta.model.Observation;
+import de.fraunhofer.iosb.ilt.sta.service.MqttSubscription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
+public class STASubscriber {
+
+    Logger logger = LoggerFactory.getLogger(STASubscriber.class);
+    ScheduledExecutorService scheduler;
+    ScheduledFuture<?> pollingTask;
+    private volatile Object latestObsId = null;
+    Datastream datastream;
+    MqttSubscription mqttSubscription;
+    long pollingRate;
+
+    public STASubscriber(Datastream datastream, long pollingRate) {
+        this.datastream = datastream;
+        this.scheduler = Executors.newSingleThreadScheduledExecutor();
+        this.pollingRate = pollingRate;
+    }
+
+    public void startStream(StreamListener streamListener) {
+        try {
+            logger.info("Attempting to start MQTT subscription on Datastream {}...", datastream.getName());
+            subscribeMQTT(streamListener);
+        } catch (MqttException e) {
+            logger.warn("Error starting MQTT subscription. If MQTT is not configured, ignore this", e);
+            logger.info("Attempting to start polling service on Datastream {}...", datastream.getName());
+            subscribePoller(streamListener);
+        }
+    }
+
+    public void stopStream() throws MqttException {
+        unsubscribeMQTT();
+        unsubscribePoller();
+    }
+
+    private void subscribeMQTT(StreamListener streamListener) throws MqttException {
+        unsubscribeMQTT();
+        mqttSubscription = datastream.
+                <Observation>subscribeRelative(observation ->
+                streamListener.onDataReceived(STAUtils.createDataBlock(observation)),
+                EntityType.OBSERVATIONS);
+    }
+
+    private void unsubscribeMQTT() throws MqttException {
+        if (mqttSubscription != null)
+            datastream.getService().unsubscribe(mqttSubscription);
+    }
+
+    private void subscribePoller(StreamListener streamListener) {
+        unsubscribePoller();
+        // Schedule polling mechanism at configured polling rate
+        pollingTask = scheduler.scheduleAtFixedRate(() -> {
+            try {
+                // Get latest observation based on phenomenonTime
+                Observation obs = datastream.getService().observations().query().orderBy("phenomenonTime").first();
+                // Only trigger callback when we have a new observation
+                if (obs != null && (latestObsId != null && !latestObsId.equals(obs.getId().getValue())))
+                    streamListener.onDataReceived(STAUtils.createDataBlock(obs));
+                // Set latest observation ID to current observation ID
+                latestObsId = obs.getId().getValue();
+            } catch (ServiceFailureException e) {
+                logger.warn("Error retrieving latest Observation from Datastream {}", datastream.getName(), e);
+            }
+        }, 0, pollingRate, TimeUnit.MILLISECONDS);
+    }
+
+    private void unsubscribePoller() {
+        // Cancel current task if needed
+        if (pollingTask != null && !pollingTask.isCancelled())
+            pollingTask.cancel(true);
+
+        // Shutdown scheduler
+        if (scheduler != null && !scheduler.isShutdown())
+            scheduler.shutdownNow();
+    }
+
+}

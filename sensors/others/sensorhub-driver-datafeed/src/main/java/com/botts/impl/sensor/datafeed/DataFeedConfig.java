@@ -17,7 +17,7 @@ import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 
 /**
- * Configuration settings for the {@link Driver} driver exposed via the OpenSensorHub Admin panel.
+ * Configuration settings for the {@link DataFeedDriver} driver exposed via the OpenSensorHub Admin panel.
  * <p>
  * Public fields are exposed in the Admin panel for configuration by the user.
  * These fields can be annotated with the DisplayInfo annotation to provide additional information to the user
@@ -29,7 +29,7 @@ import org.sensorhub.api.sensor.SensorConfig;
  * public Type configOption = "default value";
  * }</pre>
  */
-public class Config extends SensorConfig {
+public class DataFeedConfig extends SensorConfig {
     /**
      * The unique identifier for the configured sensor (or sensor platform).
      */

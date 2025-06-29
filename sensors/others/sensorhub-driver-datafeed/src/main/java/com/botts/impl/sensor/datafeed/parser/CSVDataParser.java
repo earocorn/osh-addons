@@ -6,7 +6,7 @@ import com.botts.impl.sensor.datafeed.parser.config.CSVDataParserConfig;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.botts.impl.sensor.datafeed.Utils.parseValue;
+import static com.botts.impl.sensor.datafeed.DataFeedUtils.parseValue;
 
 public class CSVDataParser extends AbstractDataParser {
 

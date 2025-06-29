@@ -12,34 +12,29 @@
 package com.botts.impl.sensor.datafeed;
 
 import com.botts.api.sensor.datafeed.parser.IDataParser;
-import com.botts.impl.sensor.datafeed.parser.CSVDataParser;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Random;
 
 /**
- * Driver implementation for the sensor.
+ * DataFeedDriver implementation for the sensor.
  * <p>
  * This class is responsible for providing sensor information, managing output registration,
  * and performing initialization and shutdown for the driver and its outputs.
  */
-public class Driver extends AbstractSensorModule<Config> {
+public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
     static final String UID_PREFIX = "urn:osh:sensor:simulated:";
     static final String XML_PREFIX = "SIMULATED_DRIVER_";
 
-    private static final Logger logger = LoggerFactory.getLogger(Driver.class);
+    private static final Logger logger = LoggerFactory.getLogger(DataFeedDriver.class);
 
-    Output output;
+    DataFeedOutput output;
     Thread processingThread;
     volatile boolean doProcessing = true;
     ICommProvider<?> commProvider;
@@ -54,7 +49,7 @@ public class Driver extends AbstractSensorModule<Config> {
         generateXmlID(XML_PREFIX, config.serialNumber);
 
         // Create and initialize output
-        output = new Output(this);
+        output = new DataFeedOutput(this);
         addOutput(output, false);
         output.init();
     }

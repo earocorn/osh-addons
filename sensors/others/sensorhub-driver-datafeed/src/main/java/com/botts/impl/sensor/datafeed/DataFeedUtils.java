@@ -4,7 +4,7 @@ import com.botts.impl.sensor.datafeed.data.BaseDataType;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 
-public class Utils {
+public class DataFeedUtils {
     public static void setFieldData(int index, Object datum, DataBlock dataBlock) {
         if (datum instanceof Integer) {
             dataBlock.setIntValue(index, (Integer) datum);

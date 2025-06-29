@@ -16,7 +16,7 @@ import java.io.InputStreamReader;
 import java.util.*;
 import java.util.function.Consumer;
 
-import static com.botts.impl.sensor.datafeed.Utils.setComponentData;
+import static com.botts.impl.sensor.datafeed.DataFeedUtils.setComponentData;
 
 public class AbstractDataParser implements IDataParser {
 
@@ -80,7 +80,7 @@ public class AbstractDataParser implements IDataParser {
         for (Map.Entry<String, Object> entry : data.entrySet()) {
             String fieldName = entry.getKey();
             Object value = entry.getValue();
-            String mappedFieldName = config.fieldMapping.get(fieldName);
+            String mappedFieldName = config.fieldMapping.stream().toList().get(0).value;
             setComponentData(this.outputStructure.getComponent(mappedFieldName), value);
         }
         // TODO: Check that component datablocks update parent datablock

@@ -27,7 +27,7 @@ public class Descriptor extends JarModuleProvider implements IModuleProvider {
      */
     @Override
     public Class<? extends IModule<?>> getModuleClass() {
-        return Driver.class;
+        return DataFeedDriver.class;
     }
 
     /**
@@ -37,6 +37,6 @@ public class Descriptor extends JarModuleProvider implements IModuleProvider {
      */
     @Override
     public Class<? extends ModuleConfig> getModuleConfigClass() {
-        return Config.class;
+        return DataFeedConfig.class;
     }
 }

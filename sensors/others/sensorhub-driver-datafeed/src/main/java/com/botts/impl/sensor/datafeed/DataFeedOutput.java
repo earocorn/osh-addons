@@ -23,14 +23,14 @@ import org.vast.swe.helper.GeoPosHelper;
 
 import java.util.ArrayList;
 
-import static com.botts.impl.sensor.datafeed.Utils.setFieldData;
+import static com.botts.impl.sensor.datafeed.DataFeedUtils.setFieldData;
 
 /**
- * Output specification and provider for {@link Driver}.
+ * DataFeedOutput specification and provider for {@link DataFeedDriver}.
  */
-public class Output extends AbstractSensorOutput<Driver> {
+public class DataFeedOutput extends AbstractSensorOutput<DataFeedDriver> {
     static final String SENSOR_OUTPUT_NAME = "simWeatherOutput";
-    static final String SENSOR_OUTPUT_LABEL = "Simulated Weather Output";
+    static final String SENSOR_OUTPUT_LABEL = "Simulated Weather DataFeedOutput";
     static final String SENSOR_OUTPUT_DESCRIPTION = "Data from a simulated weather station";
 
     private static final int MAX_NUM_TIMING_SAMPLES = 10;
@@ -46,7 +46,7 @@ public class Output extends AbstractSensorOutput<Driver> {
      *
      * @param parentDriver Sensor driver providing this output.
      */
-    Output(Driver parentDriver) {
+    DataFeedOutput(DataFeedDriver parentDriver) {
         super(SENSOR_OUTPUT_NAME, parentDriver);
     }
 
@@ -125,7 +125,7 @@ public class Output extends AbstractSensorOutput<Driver> {
             // Publish the data block
             latestRecord = dataBlock;
             latestRecordTime = timestamp;
-            eventHandler.publish(new DataEvent(latestRecordTime, Output.this, dataBlock));
+            eventHandler.publish(new DataEvent(latestRecordTime, DataFeedOutput.this, dataBlock));
         }
     }
 

@@ -12,6 +12,7 @@
 package com.botts.impl.sensor.datafeed;
 
 import com.botts.api.sensor.datafeed.parser.DataParserConfig;
+import com.botts.impl.sensor.datafeed.parser.config.CSVDataParserConfig;
 import org.sensorhub.api.comm.CommProviderConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
@@ -41,6 +42,6 @@ public class DataFeedConfig extends SensorConfig {
     @DisplayInfo(label = "Communication Settings")
     public CommProviderConfig<?> commSettings;
 
-    public DataParserConfig dataParserConfig;
+    public DataParserConfig dataParserConfig = new CSVDataParserConfig();
 
 }

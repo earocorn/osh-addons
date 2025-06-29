@@ -80,8 +80,8 @@ public class AbstractDataParser implements IDataParser {
         for (Map.Entry<String, Object> entry : data.entrySet()) {
             String fieldName = entry.getKey();
             Object value = entry.getValue();
-            String mappedFieldName = config.fieldMapping.stream().toList().get(0).value;
-            setComponentData(this.outputStructure.getComponent(mappedFieldName), value);
+//            String mappedFieldName = ;
+//            setComponentData(this.outputStructure.getComponent(mappedFieldName), value);
         }
         // TODO: Check that component datablocks update parent datablock
         return this.outputStructure.getData();

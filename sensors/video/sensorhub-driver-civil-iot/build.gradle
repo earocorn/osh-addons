@@ -1,0 +1,36 @@
+description = 'Civil IoT Video Driver'
+ext.details = "Driver to capture stream video from Taiwan's Civil IoT API"
+version = '1.0.0'
+
+dependencies {
+    implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    implementation 'de.fraunhofer.iosb.ilt:FROST-Client:0.45'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.17.1'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.1'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.17.1'
+    testImplementation('junit:junit:4.13.1')
+}
+
+test {
+    useJUnit()
+}
+
+// add info to OSGi manifest
+osgi {
+    manifest {
+        attributes ('Bundle-Vendor': 'Botts Innovative Research, Inc.')
+        attributes ('Bundle-Activator': 'com.botts.impl.driver.civiliot.Activator')
+    }
+}
+
+// add info to maven pom
+ext.pom >>= {
+    developers {
+        developer {
+            id 'earocorn'
+            name 'Alex Almanza'
+            organization 'Botts Innovative Research, Inc.'
+            organizationUrl 'https://www.botts-inc.com'
+        }
+    }
+}

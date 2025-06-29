@@ -1,0 +1,55 @@
+import com.botts.impl.driver.civiliot.CIoTPoller;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.sensorhub.api.common.SensorHubException;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.text.ParseException;
+
+public class TestPoller {
+
+    URL timestampURL = new URL("https://airtw.moenv.gov.tw/AirSitePic/20240702/001-202407021500.jpg");
+    URL uuidURL = new URL("https://iapi.wra.gov.tw/v3/api/Image/3e900c38-c2dd-440c-91d2-023a0c4a8aad");
+    CIoTPoller timestampPoller;
+    CIoTPoller uuidPoller;
+
+    public TestPoller() throws MalformedURLException {
+    }
+
+    @Before
+    public void setup() throws SensorHubException, InterruptedException {
+        // For testing only pollers
+        timestampPoller = new CIoTPoller(timestampURL, 10);
+        uuidPoller = new CIoTPoller(uuidURL, 15);
+    }
+
+
+    @Test
+    public void printImageInfo() throws IOException {
+        URL url = new URL("https://iapi.wra.gov.tw/v3/api/Image/19e35ba3-22b0-4a03-a5ae-974947e9b459");
+        BufferedImage image = ImageIO.read(url);
+        System.out.println("Dimensions: " + image.getWidth() + "x" + image.getHeight());
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(image, "JPG", baos);
+        byte[] imageBytes = baos.toByteArray();
+        System.out.println(imageBytes.length);
+    }
+
+    @Test
+    public void getTimestamps() throws IOException, ParseException {
+        Assert.assertTrue(timestampPoller.getImageTimestampUTC(timestampURL) > 1700000000);
+        Assert.assertTrue(uuidPoller.getImageTimestampUTC(uuidURL) > 1700000000);
+    }
+
+    @Test
+    public void getLatestURL() throws IOException, ParseException {
+        Assert.assertNotNull(timestampPoller.getLatestURL());
+        Assert.assertNotNull(uuidPoller.getLatestURL());
+    }
+}

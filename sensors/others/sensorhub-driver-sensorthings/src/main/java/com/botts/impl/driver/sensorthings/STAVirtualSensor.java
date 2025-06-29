@@ -85,7 +85,8 @@ public class STAVirtualSensor extends AbstractSensorModule<STAVirtualSensorConfi
         generateUniqueID("urn:osh:driver:sensorthings:", config.serialNumber);
         generateXmlID("SENSOR_THINGS", config.serialNumber);
 
-        System.setProperty("javax.net.ssl.trustStore", "/Users/alexalmanza/Desktop/truststore.jks");
+        // TODO: Remove the following. This is just because IntelliJ certs r broken
+        System.setProperty("javax.net.ssl.trustStore", "/home/earocorn/Desktop/truststore.jks");
         System.setProperty("javax.net.ssl.trustStorePassword", "changeit");
 
         CompletableFuture.runAsync(() -> {

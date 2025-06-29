@@ -70,11 +70,14 @@ public class STASubscriber {
             try {
                 // Get latest observation based on phenomenonTime
                 Observation obs = datastream.getService().observations().query().orderBy("phenomenonTime").first();
-                // Only trigger callback when we have a new observation
-                if (obs != null && (latestObsId != null && !latestObsId.equals(obs.getId().getValue())))
-                    streamListener.onDataReceived(STAUtils.createDataBlock(obs));
-                // Set latest observation ID to current observation ID
-                latestObsId = obs.getId().getValue();
+                if (obs != null) {
+                    Object currentObsId = obs.getId().getValue();
+                    // Trigger callback if it's the first observation recorded, or a new observation
+                    if (latestObsId == null || !latestObsId.equals(currentObsId)) {
+                        streamListener.onDataReceived(STAUtils.createDataBlock(obs));
+                        latestObsId = currentObsId;
+                    }
+                }
             } catch (ServiceFailureException e) {
                 logger.warn("Error retrieving latest Observation from Datastream {}", datastream.getName(), e);
             }

@@ -11,15 +11,21 @@
  ******************************* END LICENSE BLOCK ***************************/
 package com.botts.impl.sensor.datafeed;
 
+import com.botts.impl.sensor.datafeed.data.BaseDataType;
+import com.botts.impl.sensor.datafeed.data.DataComponentConfig;
+import com.botts.impl.sensor.datafeed.data.DataRecordConfig;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
+import org.sensorhub.impl.sensor.VarRateSensorOutput;
+import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
+import org.vast.swe.helper.VectorHelper;
 
 import java.util.ArrayList;
 
@@ -28,16 +34,9 @@ import static com.botts.impl.sensor.datafeed.DataFeedUtils.setFieldData;
 /**
  * DataFeedOutput specification and provider for {@link DataFeedDriver}.
  */
-public class DataFeedOutput extends AbstractSensorOutput<DataFeedDriver> {
-    static final String SENSOR_OUTPUT_NAME = "simWeatherOutput";
-    static final String SENSOR_OUTPUT_LABEL = "Simulated Weather DataFeedOutput";
-    static final String SENSOR_OUTPUT_DESCRIPTION = "Data from a simulated weather station";
+public class DataFeedOutput extends VarRateSensorOutput<DataFeedDriver> {
 
-    private static final int MAX_NUM_TIMING_SAMPLES = 10;
-    private final ArrayList<Double> intervalHistogram = new ArrayList<>(MAX_NUM_TIMING_SAMPLES);
-    private final Object histogramLock = new Object();
-    private final Object processingLock = new Object();
-
+    private final DataRecordConfig dataRecordConfig;
     private DataRecord dataRecord;
     private DataEncoding dataEncoding;
 
@@ -47,7 +46,8 @@ public class DataFeedOutput extends AbstractSensorOutput<DataFeedDriver> {
      * @param parentDriver Sensor driver providing this output.
      */
     DataFeedOutput(DataFeedDriver parentDriver) {
-        super(SENSOR_OUTPUT_NAME, parentDriver);
+        super(parentDriver.getConfiguration().dataParserConfig.outputStructure.name, parentDriver, 5.0);
+        this.dataRecordConfig = parentDriver.getConfiguration().dataParserConfig.outputStructure;
     }
 
     /**
@@ -57,34 +57,28 @@ public class DataFeedOutput extends AbstractSensorOutput<DataFeedDriver> {
         // Get an instance of SWE Factory suitable to build components
         GeoPosHelper sweFactory = new GeoPosHelper();
 
-        // Create the data record description
-        dataRecord = sweFactory.createRecord()
-                .name(SENSOR_OUTPUT_NAME)
-                .label(SENSOR_OUTPUT_LABEL)
-                .description(SENSOR_OUTPUT_DESCRIPTION)
+        SWEBuilders.DataRecordBuilder dataRecordBuilder = sweFactory.createRecord()
+                .name(dataRecordConfig.name)
+                .label(dataRecordConfig.label)
+                .description(dataRecordConfig.description)
                 .addField("sampleTime", sweFactory.createTime()
                         .asSamplingTimeIsoUTC()
                         .label("Sample Time")
-                        .description("Time of data collection"))
-                .addField("temperature", sweFactory.createQuantity()
-                        .definition(SWEHelper.getPropertyUri("AirTemperature"))
-                        .label("Air Temperature")
-                        .uomCode("Cel"))
-                .addField("pressure", sweFactory.createQuantity()
-                        .definition(SWEHelper.getPropertyUri("AirPressure"))
-                        .label("Air Pressure")
-                        .uomCode("hPa"))
-                .addField("windSpeed", sweFactory.createQuantity()
-                        .definition(SWEHelper.getPropertyUri("WindSpeed"))
-                        .label("Wind Speed")
-                        .uomCode("m/s"))
-                .addField("windDirection", sweFactory.createQuantity()
-                        .definition(SWEHelper.getPropertyUri("WindDirection"))
-                        .label("Wind Direction")
-                        .uomCode("deg")
-                        .refFrame(SWEConstants.REF_FRAME_NED, "Z"))
-                .build();
+                        .description("Time of data collection"));
 
+        for (DataComponentConfig field : dataRecordConfig.fields) {
+            var component = DataFeedUtils.createDataComponent(field)
+                    .label(field.label)
+                    .description(field.description)
+                    .definition(field.definition);
+
+            if (!field.uom.isBlank() && field.dataType == BaseDataType.FLOAT || field.dataType == BaseDataType.DOUBLE || field.dataType == BaseDataType.BYTE || field.dataType == BaseDataType.LONG)
+                ((SWEBuilders.QuantityBuilder) component).uom(field.uom);
+
+            dataRecordBuilder.addField(field.name, component);
+        }
+
+        dataRecord = dataRecordBuilder.build();
         dataEncoding = sweFactory.newTextEncoding(",", "\n");
     }
 
@@ -98,51 +92,15 @@ public class DataFeedOutput extends AbstractSensorOutput<DataFeedDriver> {
         return dataEncoding;
     }
 
-    @Override
-    public double getAverageSamplingPeriod() {
-        synchronized (histogramLock) {
-            double sum = 0;
-            for (double sample : intervalHistogram)
-                sum += sample;
+    public void setData(DataBlock data) {
+        DataBlock dataBlock = latestRecord == null ? dataRecord.createDataBlock() : latestRecord.renew();
 
-            return sum / intervalHistogram.size();
-        }
-    }
+        if (dataBlock.getAtomCount() != data.getAtomCount())
+            throw new IllegalArgumentException("Driver output structure does not match parser output structure");
 
-    /**
-     * Sets the data for the output and publishes it.
-     */
-    public void setData(long timestamp, Object... data) {
-        synchronized (processingLock) {
-            DataBlock dataBlock = latestRecord == null ? dataRecord.createDataBlock() : latestRecord.renew();
-            updateIntervalHistogram();
-
-            int index = 0;
-            dataBlock.setDoubleValue(index++, timestamp / 1000d);
-            for (Object datum : data)
-                setFieldData(index++, datum, dataBlock);
-
-            // Publish the data block
-            latestRecord = dataBlock;
-            latestRecordTime = timestamp;
-            eventHandler.publish(new DataEvent(latestRecordTime, DataFeedOutput.this, dataBlock));
-        }
-    }
-
-    /**
-     * Updates the interval histogram with the time between the latest record and the current time
-     * for calculating the average sampling period.
-     */
-    private void updateIntervalHistogram() {
-        synchronized (histogramLock) {
-            if (latestRecord != null && latestRecordTime != Long.MIN_VALUE) {
-                long interval = System.currentTimeMillis() - latestRecordTime;
-                intervalHistogram.add(interval / 1000d);
-
-                if (intervalHistogram.size() > MAX_NUM_TIMING_SAMPLES) {
-                    intervalHistogram.remove(0);
-                }
-            }
-        }
+        // Publish the data block
+        latestRecord = data;
+        latestRecordTime = data.getLongValue(0);
+        eventHandler.publish(new DataEvent(latestRecordTime, DataFeedOutput.this, data));
     }
 }

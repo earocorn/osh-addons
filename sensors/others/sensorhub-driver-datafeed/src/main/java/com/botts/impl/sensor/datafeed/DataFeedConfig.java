@@ -42,6 +42,6 @@ public class DataFeedConfig extends SensorConfig {
     @DisplayInfo(label = "Communication Settings")
     public CommProviderConfig<?> commSettings;
 
-    public DataParserConfig dataParserConfig = new CSVDataParserConfig();
+    public DataParserConfig dataParserConfig;
 
 }

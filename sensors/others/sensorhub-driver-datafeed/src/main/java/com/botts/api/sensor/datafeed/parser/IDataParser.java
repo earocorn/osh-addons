@@ -9,15 +9,9 @@ import java.util.function.Consumer;
 
 public interface IDataParser {
 
-    DataParserConfig getConfiguration();
-
-    void setConfiguration(DataParserConfig config);
-
     void subscribe(InputStream inputStream, Consumer<DataBlock> consumer) throws IOException;
 
     void unsubscribe();
 
-    Map<String, Object> parse(String data);
-
-//    Map<String, Object> parse(byte[] data);
+    Map<String, Object> parse(byte[] data);
 }

@@ -11,7 +11,9 @@
  ******************************* END LICENSE BLOCK ***************************/
 package com.botts.impl.sensor.datafeed;
 
+import com.botts.api.sensor.datafeed.parser.DataParserConfig;
 import com.botts.api.sensor.datafeed.parser.IDataParser;
+import net.opengis.swe.v20.DataComponent;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
@@ -29,8 +31,8 @@ import java.lang.reflect.InvocationTargetException;
  * and performing initialization and shutdown for the driver and its outputs.
  */
 public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
-    static final String UID_PREFIX = "urn:osh:sensor:simulated:";
-    static final String XML_PREFIX = "SIMULATED_DRIVER_";
+    static final String UID_PREFIX = "urn:osh:driver:datafeed:";
+    static final String XML_PREFIX = "DATAFEED_DRIVER_";
 
     private static final Logger logger = LoggerFactory.getLogger(DataFeedDriver.class);
 
@@ -62,8 +64,6 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
         if (commProvider == null)
         {
             try {
-                // we need to recreate comm provider here because it can be changed by UI
-                // TODO do that in updateConfig
                 if (config.commSettings == null)
                     throw new SensorHubException("No communication settings specified");
 
@@ -71,8 +71,8 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
                 commProvider = (ICommProvider<?>)moduleReg.loadSubModule(config.commSettings, true);
                 commProvider.start();
                 Class<?> clazz = config.dataParserConfig.getDataParserClass();
-                Constructor<?> constructor = clazz.getConstructor(IDataParser.class);
-                dataParser = (IDataParser) constructor.newInstance(config.dataParserConfig);
+                Constructor<?> constructor = clazz.getConstructor(config.dataParserConfig.getClass(), DataComponent.class);
+                dataParser = (IDataParser) constructor.newInstance(config.dataParserConfig, output.getRecordDescription());
             } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
                 commProvider = null;
                 dataParser = null;
@@ -106,7 +106,7 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
             if (commProvider != null && commProvider.isStarted()) {
                 try {
                     dataParser.subscribe(commProvider.getInputStream(), (dataBlock) -> {
-                        output.setData(System.currentTimeMillis(), dataBlock);
+                        output.setData(dataBlock);
                     });
                 } catch (IOException e) {
                     throw new RuntimeException(e);

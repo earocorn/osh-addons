@@ -1,10 +1,17 @@
 package com.botts.impl.sensor.datafeed;
 
 import com.botts.impl.sensor.datafeed.data.BaseDataType;
+import com.botts.impl.sensor.datafeed.data.DataComponentConfig;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
+import net.opengis.swe.v20.DataType;
+import net.opengis.swe.v20.ScalarComponent;
+import org.vast.swe.SWEBuilders;
+import org.vast.swe.SWEHelper;
 
 public class DataFeedUtils {
+    static SWEHelper fac = new SWEHelper();
+
     public static void setFieldData(int index, Object datum, DataBlock dataBlock) {
         if (datum instanceof Integer) {
             dataBlock.setIntValue(index, (Integer) datum);
@@ -23,6 +30,35 @@ public class DataFeedUtils {
         } else if (datum instanceof Short) {
             dataBlock.setShortValue(index, (Short) datum);
         }
+    }
+
+    public static SWEBuilders.DataComponentBuilder<? extends SWEBuilders.SimpleComponentBuilder<?,?>, ? extends ScalarComponent> createDataComponent(DataComponentConfig config) {
+        if (config == null)
+            return null;
+        switch (config.dataType) {
+            case INTEGER -> {
+                return fac.createCount();
+            }
+            case STRING -> {
+                return fac.createText();
+            }
+            case BOOLEAN -> {
+                return fac.createBoolean();
+            }
+            case LONG -> {
+                return fac.createQuantity().dataType(DataType.LONG);
+            }
+            case DOUBLE -> {
+                return fac.createQuantity().dataType(DataType.DOUBLE);
+            }
+            case FLOAT -> {
+                return fac.createQuantity().dataType(DataType.FLOAT);
+            }
+            case BYTE -> {
+                return fac.createQuantity().dataType(DataType.BYTE);
+            }
+        }
+        return null;
     }
 
     public static void setComponentData(DataComponent component, Object datum) {

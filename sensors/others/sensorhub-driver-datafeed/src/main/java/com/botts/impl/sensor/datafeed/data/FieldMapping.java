@@ -2,8 +2,8 @@ package com.botts.impl.sensor.datafeed.data;
 
 public class FieldMapping {
 
-    public String inputFieldName;
+    public String inputFieldName = "inputFieldName";
 
-    public String outputFieldName;
+    public String outputFieldName = "outputFieldName";
 
 }

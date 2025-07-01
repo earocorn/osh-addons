@@ -1,3 +1,5 @@
+package com.botts.test.impl.driver.civiliot;
+
 import com.botts.impl.driver.civiliot.CIoTDriver;
 import com.botts.impl.driver.civiliot.CIoTDriverConfig;
 import org.junit.Before;
@@ -5,7 +7,6 @@ import org.junit.Test;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.comm.HTTPConfig;
 
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 
 public class TestCIoTDriver {

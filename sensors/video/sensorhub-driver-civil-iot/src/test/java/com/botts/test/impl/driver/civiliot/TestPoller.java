@@ -1,3 +1,5 @@
+package com.botts.test.impl.driver.civiliot;
+
 import com.botts.impl.driver.civiliot.CIoTPoller;
 import org.junit.Assert;
 import org.junit.Before;
@@ -25,8 +27,8 @@ public class TestPoller {
     @Before
     public void setup() throws SensorHubException, InterruptedException {
         // For testing only pollers
-        timestampPoller = new CIoTPoller(timestampURL, 10);
-        uuidPoller = new CIoTPoller(uuidURL, 15);
+//        timestampPoller = new CIoTPoller();
+//        uuidPoller = new CIoTPoller(uuidURL, 15);
     }
 
 

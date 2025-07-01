@@ -13,3 +13,8 @@ Select ```Sensors``` from the left hand accordion control and right click for co
 - **Topic ID:** MQTT topic ID of F20 device
 - **Username:** Username to authenticate with MQTT broker
 - **Password:** Password to authenticate with MQTT broker
+
+
+## Starting Driver
+It is possible that you will encounter errors regarding SSL when starting the driver.
+If this is the case, then you will need to create a trust store

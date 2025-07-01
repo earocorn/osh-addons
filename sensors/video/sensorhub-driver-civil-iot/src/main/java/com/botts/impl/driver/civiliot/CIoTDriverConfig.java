@@ -32,7 +32,13 @@ public class CIoTDriverConfig extends SensorConfig {
     @DisplayInfo(label = "SensorThings Endpoint" , desc = "SensorThings API endpoint to connect")
     public HTTPConfig sensorThingsEndpoint;
 
-    @DisplayInfo.Required
+    @DisplayInfo(label = "Datastream ID Start")
+    public int idStart = 59;
+    @DisplayInfo(label = "Datastream ID End")
+    public int idEnd = 130;
+    @DisplayInfo(label = "General Poll Interval (min)", desc = "Poll interval to used if Datastream IDs & poll rates are not specified")
+    public int pollInterval = 2;
+
     @DisplayInfo(label = "Datastream IDs", desc = "SensorThings Datastream IDs to stream video")
     public List<DatastreamPollConfig> datastreamIds = new ArrayList<>();
 
@@ -43,6 +49,14 @@ public class CIoTDriverConfig extends SensorConfig {
         @DisplayInfo.Required
         @DisplayInfo(label = "Datastream ID", desc = "SensorThings Datastream ID from which this driver receives video")
         public int datastreamId;
+    }
+
+    public CIoTDriverConfig() {
+        this.sensorThingsEndpoint = new HTTPConfig();
+        this.sensorThingsEndpoint.remoteHost = "sta.ci.taiwan.gov.tw";
+        this.sensorThingsEndpoint.remotePort = 443;
+        this.sensorThingsEndpoint.enableTLS = true;
+        this.sensorThingsEndpoint.resourcePath = "/STA_CCTV/v1.0/";
     }
 
 }

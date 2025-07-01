@@ -31,27 +31,19 @@ public class CIoTPoller  {
 
     private final boolean urlHasTimestamp;
     private final URL initialURL;
-    private final int pollInterval;
-    private ScheduledExecutorService scheduler;
+    private final long pollInterval;
+    private final ScheduledExecutorService scheduler;
     private ScheduledFuture<?> pollTask;
     private volatile byte[] latestBuffer;
     private final VideoOutput<?> output;
     private IFeature foi;
 
-    public CIoTPoller(URL initialURL, int pollInterval, VideoOutput<?> output) {
+    public CIoTPoller(URL initialURL, long pollInterval, VideoOutput<?> output) {
         this.initialURL = initialURL;
         this.pollInterval = pollInterval;
         this.urlHasTimestamp = initialURL.getPath().contains(AIR_PREFIX);
         this.output = output;
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
-    }
-
-    // TODO: For testing
-    public CIoTPoller(URL initialURL, int pollInterval) {
-        this.initialURL = initialURL;
-        this.pollInterval = pollInterval;
-        this.urlHasTimestamp = initialURL.getPath().contains(AIR_PREFIX);
-        this.output = null;
     }
 
     public void setFoi(IFeature foi) {
@@ -74,8 +66,7 @@ public class CIoTPoller  {
             } catch (ParseException e) {
                 System.out.println("Error getting timestamp from URL {}" + e.getMessage());
             }
-            // TODO CHANGE TO MINUTES
-        }, 0, pollInterval, TimeUnit.SECONDS);
+        }, 0, pollInterval, TimeUnit.MINUTES);
     }
 
     public void stop() {

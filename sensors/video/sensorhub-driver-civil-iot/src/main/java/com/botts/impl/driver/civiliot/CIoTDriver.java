@@ -96,12 +96,25 @@ public class CIoTDriver extends AbstractSensorModule<CIoTDriverConfig> {
             throw new RuntimeException(e);
         }
 
-        for (int i = 58; i <= 62; i++) {
-            // TODO Change back
-//            var id = datastreamConfig.datastreamId;
-//            var pollInterval = datastreamConfig.pollInterval;
-            var id = i;
-            var pollInterval = 1;
+        // If datastream IDs are specified, then use those from config, else just use a range of IDs from the config
+        boolean useDatastreamRange = true;
+        int start = config.idStart;
+        int end = config.idEnd;
+        if (!(config.datastreamIds == null || config.datastreamIds.isEmpty())) {
+            useDatastreamRange = false;
+            start = 0;
+            end = config.datastreamIds.size();
+        }
+
+        for (int i = start; i <= end; i++) {
+            int id = i;
+            long pollInterval = config.pollInterval;
+            if (!useDatastreamRange) {
+                var datastreamPollConfig = config.datastreamIds.get(i);
+                id = datastreamPollConfig.datastreamId;
+                pollInterval = datastreamPollConfig.pollInterval;
+            }
+
             try {
                 Datastream datastream = sensorThingsService.datastreams().find(new IdLong((long)id), Expansion.of(EntityType.DATASTREAMS)
                         .with(ExpandedEntity.from(EntityType.OBSERVATIONS))
@@ -112,7 +125,7 @@ public class CIoTDriver extends AbstractSensorModule<CIoTDriverConfig> {
                 var obsArea = datastream.getObservedArea();
                 if (obsArea != null) {
                     feature = STAUtils.toSamplingFeature(obsArea);
-                    // Need to specify other information, because this method only converts GeoJson geometry
+                    // Specify other information, because the above method only converts GeoJson geometry to feature geometry
                     feature.setName("Feature " + id);
                     feature.setUniqueIdentifier(STAUtils.FEATURE_UID_PREFIX + id);
                     feature.setDescription("Observed area for datastream: " + datastream.getDescription());

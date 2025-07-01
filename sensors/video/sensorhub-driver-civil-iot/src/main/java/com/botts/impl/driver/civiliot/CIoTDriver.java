@@ -37,13 +37,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class CIoTDriver extends AbstractSensorModule<CIoTDriverConfig> {
 
     SensorThingsService sensorThingsService;
     String staEndpointUrl;
     List<CIoTPoller> pollers;
-    Map<String, VideoOutput<?>> resOutputsMap;
+    ScheduledExecutorService executor;
 
     @Override
     public void setConfiguration(CIoTDriverConfig config)
@@ -144,7 +146,7 @@ public class CIoTDriver extends AbstractSensorModule<CIoTDriverConfig> {
                         this,
                         dimensions,
                         "video" + id,
-                        "Video " + datastream.getName(),
+                        "Video " + datastream.getName() + " " + id,
                         datastream.getDescription(),
                         pollInterval*60);
                 output.init();
@@ -162,7 +164,14 @@ public class CIoTDriver extends AbstractSensorModule<CIoTDriverConfig> {
         }
 
         if (getOutputs().isEmpty())
-            throw new CompletionException("Requested data is not available from SensorThings API " + staEndpointUrl + ". Please check observed properties are valid.", null);
+            throw new CompletionException("Requested data is not available from SensorThings API " + staEndpointUrl + ". Please check that Datastream IDs are valid", null);
+
+        if (!pollers.isEmpty() && executor == null) {
+            executor = Executors.newScheduledThreadPool(pollers.size());
+            getLogger().debug("Created scheduled thread pool executor of size {}", pollers.size());
+            for (var poller : pollers)
+                poller.setExecutor(executor);
+        }
     }
 
     @Override
@@ -170,6 +179,15 @@ public class CIoTDriver extends AbstractSensorModule<CIoTDriverConfig> {
         super.doStart();
         for (var poller : pollers)
             poller.start();
+    }
+
+    @Override
+    public void cleanup() throws SensorHubException {
+        super.cleanup();
+        for (var poller : pollers) {
+            poller.stop();
+            poller.cleanup();
+        }
     }
 
     @Override
@@ -181,6 +199,6 @@ public class CIoTDriver extends AbstractSensorModule<CIoTDriverConfig> {
 
     @Override
     public boolean isConnected() {
-        return false;
+        return executor != null && !pollers.isEmpty();
     }
 }

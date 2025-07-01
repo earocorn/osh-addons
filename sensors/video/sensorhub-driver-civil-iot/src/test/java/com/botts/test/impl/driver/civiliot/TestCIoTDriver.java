@@ -2,6 +2,7 @@ package com.botts.test.impl.driver.civiliot;
 
 import com.botts.impl.driver.civiliot.CIoTDriver;
 import com.botts.impl.driver.civiliot.CIoTDriverConfig;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.sensorhub.api.common.SensorHubException;
@@ -12,13 +13,12 @@ import java.util.ArrayList;
 public class TestCIoTDriver {
 
 
-    public TestCIoTDriver() {
-    }
+    CIoTDriver driver;
 
     @Before
     public void setup() throws SensorHubException, InterruptedException {
+        driver = new CIoTDriver();
 
-        CIoTDriver driver = new CIoTDriver();
         CIoTDriverConfig config = new CIoTDriverConfig();
         // Create some configs
         CIoTDriverConfig.DatastreamPollConfig pollConfig1 = new CIoTDriverConfig.DatastreamPollConfig();
@@ -45,8 +45,8 @@ public class TestCIoTDriver {
     }
 
     @Test
-    public void test() throws SensorHubException, InterruptedException {
-
+    public void test() throws SensorHubException {
+        Assert.assertFalse(driver.getOutputs().isEmpty());
     }
 
 }

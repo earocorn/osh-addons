@@ -1,3 +1,18 @@
+/***************************** BEGIN LICENSE BLOCK ***************************
+
+ The contents of this file are subject to the Mozilla Public License, v. 2.0.
+ If a copy of the MPL was not distributed with this file, You can obtain one
+ at http://mozilla.org/MPL/2.0/.
+
+ Software distributed under the License is distributed on an "AS IS" basis,
+ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ for the specific language governing rights and limitations under the License.
+
+ The Initial Developer is Botts Innovative Research Inc. Portions created by the Initial
+ Developer are Copyright (C) 2025 the Initial Developer. All Rights Reserved.
+
+ ******************************* END LICENSE BLOCK ***************************/
+
 package com.botts.impl.driver.civiliot;
 
 import java.io.IOException;
@@ -16,6 +31,7 @@ public class CIoTUtils {
     private static final ZoneId UTC = ZoneId.of("UTC");
     private static final ZoneId TAIWAN = ZoneId.of("UTC+8");
     private static final String AIR_PREFIX = "/AirSitePic";
+    private static final int DEFAULT_MINS_BETWEEN_FRAMES = 10;
 
     public static boolean isTimestampedURL(URL url) throws IOException {
         // If more image repositories are discovered, change this to something more robust
@@ -51,7 +67,7 @@ public class CIoTUtils {
         ZonedDateTime now = ZonedDateTime.now(TAIWAN);
 
         int minute = now.getMinute();
-        int roundedMinute = (minute/10) * 10;
+        int roundedMinute = (minute/DEFAULT_MINS_BETWEEN_FRAMES) * DEFAULT_MINS_BETWEEN_FRAMES;
 
         ZonedDateTime roundedTime = now.withMinute(roundedMinute).withSecond(0).withNano(0).plusMinutes(minuteOffset);
 
@@ -71,7 +87,7 @@ public class CIoTUtils {
         try {
             ImageURLUtils.getBytes(url);
         } catch (IOException e) {
-            return getLatestURL(minuteOffset - 10, initialURL);
+            return getLatestURL(minuteOffset - DEFAULT_MINS_BETWEEN_FRAMES, initialURL);
         }
 
         return url;

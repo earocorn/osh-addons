@@ -14,7 +14,7 @@ public class CSVDataParser extends AbstractDataParser {
 
     // TODO Add to config
     private boolean hasSkippedHeader = false;
-    private CSVDataParserConfig config;
+    private final CSVDataParserConfig config;
 
     public CSVDataParser(CSVDataParserConfig config, DataComponent outputStructure) {
         super(config, outputStructure);

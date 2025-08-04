@@ -1,14 +1,14 @@
 package com.botts.impl.sensor.datafeed.parser;
 
 import com.botts.api.sensor.datafeed.parser.AbstractDataParser;
+import com.botts.impl.sensor.datafeed.DataFeedUtils;
 import com.botts.impl.sensor.datafeed.data.DataField;
 import com.botts.impl.sensor.datafeed.parser.config.CSVDataParserConfig;
+import java.util.Collections;
 import net.opengis.swe.v20.DataComponent;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import static com.botts.impl.sensor.datafeed.DataFeedUtils.parseValue;
 
 public class CSVDataParser extends AbstractDataParser {
 
@@ -26,7 +26,7 @@ public class CSVDataParser extends AbstractDataParser {
         String line = new String(data);
         if (!hasSkippedHeader) {
             hasSkippedHeader = true;
-            return null;
+            return Collections.emptyMap();
         }
 
         String[] values = line.split(config.delimiter);
@@ -37,7 +37,7 @@ public class CSVDataParser extends AbstractDataParser {
         int valueIndex = 0;
         for (DataField field : getInputFields()) {
             String rawValue = values[valueIndex++].trim();
-            Object realValue = parseValue(rawValue, field.dataType);
+            Object realValue = DataFeedUtils.parseValue(rawValue, field.dataType);
             dataMap.put(field.name, realValue);
         }
 

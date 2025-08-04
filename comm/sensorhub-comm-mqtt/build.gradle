@@ -13,7 +13,7 @@ test {
 
 osgi {
   manifest {
-    attributes ('Bundle-Vendor': 'My Company, Inc.')
+    attributes ('Bundle-Vendor': 'Botts Innovative Research, Inc.')
     attributes ('Bundle-Activator': 'com.botts.impl.comm.mqtt.Activator')
   }
 }

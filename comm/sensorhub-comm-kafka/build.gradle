@@ -1,0 +1,30 @@
+description = 'Kafka Communication Provider'
+ext.details = 'OSH comm provider to publish/subscribe on Kafka topics'
+version = '1.0.0'
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation 'org.apache.kafka:kafka-clients:4.0.0'
+}
+
+test {
+  useJUnit()
+}
+
+osgi {
+  manifest {
+    attributes ('Bundle-Vendor': 'Botts Innovative Research, Inc.')
+    attributes ('Bundle-Activator': 'com.botts.impl.comm.kafka.Activator')
+  }
+}
+
+ext.pom >>= {
+  developers {
+    developer {
+      id 'earocorn'
+      name 'Alex Almanza'
+      organization 'Botts Innovative Research, Inc.'
+      organizationUrl 'https://www.botts-inc.com'
+    }
+  }
+}

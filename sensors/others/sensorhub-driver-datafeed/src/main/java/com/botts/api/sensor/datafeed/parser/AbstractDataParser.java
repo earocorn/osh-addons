@@ -26,6 +26,7 @@ public abstract class AbstractDataParser implements IDataParser {
     public List<DataField> getInputFields() {
         return inputFields;
     }
+
     public AbstractDataParser(DataParserConfig config, DataComponent outputStructure) {
         this.config = config;
         Asserts.checkNotNull(config, "config");

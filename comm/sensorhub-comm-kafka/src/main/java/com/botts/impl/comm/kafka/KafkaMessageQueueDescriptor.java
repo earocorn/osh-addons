@@ -5,7 +5,7 @@ import org.sensorhub.api.module.IModuleProvider;
 import org.sensorhub.api.module.ModuleConfig;
 import org.sensorhub.impl.module.JarModuleProvider;
 
-public class KafkaCommModuleDescriptor extends JarModuleProvider implements IModuleProvider
+public class KafkaMessageQueueDescriptor extends JarModuleProvider implements IModuleProvider
 {
     @Override
     public String getModuleName()
@@ -24,13 +24,13 @@ public class KafkaCommModuleDescriptor extends JarModuleProvider implements IMod
     @Override
     public Class<? extends IModule<?>> getModuleClass()
     {
-        return KafkaCommProvider.class;
+        return KafkaMessageQueue.class;
     }
     
 
     @Override
     public Class<? extends ModuleConfig> getModuleConfigClass()
     {
-        return KafkaCommProviderConfig.class;
+        return KafkaMessageQueueConfig.class;
     }
 }

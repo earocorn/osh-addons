@@ -105,11 +105,9 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
         processingThread = new Thread(() -> {
             if (commProvider != null && commProvider.isStarted()) {
                 try {
-                    dataParser.subscribe(commProvider.getInputStream(), (dataBlock) -> {
-                        output.setData(dataBlock);
-                    });
+                    dataParser.subscribe(commProvider.getInputStream(), dataBlock -> output.setData(dataBlock));
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    reportError("Error while subscribing to data parser", e);
                 }
             }
         });
@@ -121,5 +119,12 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
      */
     public void stopProcessing() {
         doProcessing = false;
+        try {
+            processingThread.interrupt();
+            if (commProvider != null && commProvider.isStarted())
+                commProvider.stop();
+        } catch (SensorHubException e) {
+            reportError("Failed to stop processing", e);
+        }
     }
 }

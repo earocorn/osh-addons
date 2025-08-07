@@ -1,1 +1,1 @@
-com.botts.impl.comm.kafka.KafkaCommModuleDescriptor
+com.botts.impl.comm.kafka.KafkaMessageQueueDescriptor

@@ -1,6 +1,7 @@
 package com.botts.impl.comm.mqtt;
 
 import org.eclipse.paho.client.mqttv3.*;
+import org.sensorhub.api.client.ClientException;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.comm.LocalMessageQueue;
@@ -50,7 +51,10 @@ public class MqttCommProvider extends AbstractModule<MqttCommProviderConfig> imp
 
             @Override
             public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
-                messageQueue.offer(mqttMessage.getPayload());
+                var accepted = messageQueue.offer(mqttMessage.getPayload());
+                if (accepted) {
+                    logger.info("Message arrived");
+                }
             }
 
             @Override
@@ -59,7 +63,13 @@ public class MqttCommProvider extends AbstractModule<MqttCommProviderConfig> imp
             }
         });
 
-        if (!subTopic.isBlank()) {
+        if (subTopic != null && !subTopic.isBlank()) {
+            try {
+                mqttClient.subscribe(subTopic);
+            } catch (MqttException e) {
+                throw new RuntimeException(e);
+            }
+
             inputStream = new InputStream() {
                 private byte[] buffer = null;
                 private int position = 0;
@@ -79,7 +89,7 @@ public class MqttCommProvider extends AbstractModule<MqttCommProviderConfig> imp
             };
         }
 
-        if (!pubTopic.isBlank()) {
+        if (pubTopic != null && !pubTopic.isBlank()) {
             outputStream = new OutputStream() {
                 private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
                 @Override
@@ -103,6 +113,8 @@ public class MqttCommProvider extends AbstractModule<MqttCommProviderConfig> imp
                 }
             };
         }
+        if (inputStream == null && outputStream == null)
+            throw new ClientException("No input stream or output stream created for MQTT client");
     }
 
     @Override

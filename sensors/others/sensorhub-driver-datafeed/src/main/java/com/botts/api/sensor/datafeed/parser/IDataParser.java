@@ -1,17 +1,15 @@
 package com.botts.api.sensor.datafeed.parser;
 
 import net.opengis.swe.v20.DataBlock;
+import net.opengis.swe.v20.DataComponent;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Map;
-import java.util.function.Consumer;
 
 public interface IDataParser {
 
-    void subscribe(InputStream inputStream, Consumer<DataBlock> consumer) throws IOException;
+    DataComponent getRecordStructure();
 
-    void unsubscribe();
+    DataBlock createDataBlock(Map<String, Object> parsedData);
 
     Map<String, Object> parse(byte[] data);
 }

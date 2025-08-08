@@ -10,7 +10,6 @@ import org.sensorhub.ui.FieldWrapper;
 import org.sensorhub.ui.GenericConfigForm;
 import org.sensorhub.ui.ObjectTypeSelectionPopup;
 import org.sensorhub.ui.data.*;
-import org.vast.swe.SWEHelper;
 
 import java.util.*;
 
@@ -191,7 +190,7 @@ public class DataFeedConfigForm extends GenericConfigForm {
                             try {
                                 var bean = DataField.class.newInstance();
                                 bean.dataType = BaseDataType.getType(objectType);
-                                bean.cardinality = container.getItemIds().size();
+                                bean.ordinality = container.getItemIds().size();
                                 var beanItem = container.addBean(bean, propId + PROP_SEP);
                                 beanItem.getItemProperty(PROP_DATA_TYPE).setReadOnly(true);
                             } catch (InstantiationException | IllegalAccessException e) {

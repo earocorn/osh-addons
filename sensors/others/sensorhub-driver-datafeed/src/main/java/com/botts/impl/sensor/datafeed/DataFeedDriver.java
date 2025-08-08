@@ -13,16 +13,26 @@ package com.botts.impl.sensor.datafeed;
 
 import com.botts.api.sensor.datafeed.parser.DataParserConfig;
 import com.botts.api.sensor.datafeed.parser.IDataParser;
+import com.botts.api.sensor.datafeed.parser.IStreamProcessor;
+import com.botts.impl.sensor.datafeed.parser.LineBasedStreamProcessor;
+import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import org.sensorhub.api.comm.ICommProvider;
+import org.sensorhub.api.comm.IMessageQueuePush;
 import org.sensorhub.api.common.SensorHubException;
+import org.sensorhub.impl.module.ModuleRegistry;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.vast.util.Asserts;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * DataFeedDriver implementation for the sensor.
@@ -37,14 +47,16 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
     private static final Logger logger = LoggerFactory.getLogger(DataFeedDriver.class);
 
     DataFeedOutput output;
-    Thread processingThread;
-    volatile boolean doProcessing = true;
-    ICommProvider<?> commProvider;
+    AtomicBoolean doProcessing = new AtomicBoolean(false);
+    ICommProvider<?> streamProvider;
+    IMessageQueuePush<?> messageQueueProvider;
     IDataParser dataParser;
+    ExecutorService executor;
 
     @Override
     public void doInit() throws SensorHubException {
         super.doInit();
+        executor = Executors.newSingleThreadExecutor();
 
         // Generate identifiers
         generateUniqueID(UID_PREFIX, config.serialNumber);
@@ -54,30 +66,40 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
         output = new DataFeedOutput(this);
         addOutput(output, false);
         output.init();
+
+        Asserts.checkNotNull(config.dataParserConfig, "dataParserConfig");
+        Asserts.checkArgument(config.streamCommSettings != null || config.messageQueueCommSettings != null, "Must specify stream comm settings or message queue comm settings");
     }
 
     @Override
     public void doStart() throws SensorHubException {
         super.doStart();
 
-        // init comm provider
-        if (commProvider == null)
-        {
-            try {
-                if (config.commSettings == null)
-                    throw new SensorHubException("No communication settings specified");
+        if (config.commType == DataFeedConfig.CommType.STREAM) {
+            if (streamProvider == null && config.streamCommSettings != null)
+                streamProvider = (ICommProvider<?>) getParentHub().getModuleRegistry().loadSubModule(config.streamCommSettings, true);
+            else if (config.streamCommSettings == null)
+                throw new SensorHubException("Stream communication selected but no stream comm settings specified");
+            streamProvider.start();
+            messageQueueProvider = null;
+        } else if (config.commType == DataFeedConfig.CommType.MESSAGE_QUEUE) {
+            if (messageQueueProvider == null && config.messageQueueCommSettings != null)
+                messageQueueProvider = (IMessageQueuePush<?>) getParentHub().getModuleRegistry().loadSubModule(this, config.messageQueueCommSettings, true);
+            else if (config.messageQueueCommSettings == null)
+                throw new SensorHubException("Message queue communication selected but no message queue comm settings specified");
+            messageQueueProvider.start();
+            streamProvider = null;
+        }
 
-                var moduleReg = getParentHub().getModuleRegistry();
-                commProvider = (ICommProvider<?>)moduleReg.loadSubModule(config.commSettings, true);
-                commProvider.start();
-                Class<?> clazz = config.dataParserConfig.getDataParserClass();
-                Constructor<?> constructor = clazz.getConstructor(config.dataParserConfig.getClass(), DataComponent.class);
-                dataParser = (IDataParser) constructor.newInstance(config.dataParserConfig, output.getRecordDescription());
-            } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                commProvider = null;
-                dataParser = null;
-                throw new RuntimeException(e);
-            }
+        try {
+            Class<?> clazz = config.dataParserConfig.getDataParserClass();
+            Constructor<?> constructor = clazz.getConstructor(config.dataParserConfig.getClass(), DataComponent.class);
+            dataParser = (IDataParser) constructor.newInstance(config.dataParserConfig, output.getRecordDescription());
+        } catch (Exception e) {
+            streamProvider = null;
+            messageQueueProvider = null;
+            dataParser = null;
+            throw new SensorHubException("Unable to initialize data parser", e);
         }
 
         startProcessing();
@@ -91,7 +113,7 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
 
     @Override
     public boolean isConnected() {
-        return processingThread != null && processingThread.isAlive();
+        return doProcessing.get();
     }
 
     /**
@@ -100,29 +122,60 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
      * This method simulates sensor data collection and processing by generating data samples at regular intervals.
      */
     public void startProcessing() {
-        doProcessing = true;
+        doProcessing.set(true);
 
-        processingThread = new Thread(() -> {
-            if (commProvider != null && commProvider.isStarted()) {
-                try {
-                    dataParser.subscribe(commProvider.getInputStream(), dataBlock -> output.setData(dataBlock));
-                } catch (IOException e) {
-                    reportError("Error while subscribing to data parser", e);
-                }
+        if (config.commType == DataFeedConfig.CommType.STREAM)
+            handleStream();
+        else if (config.commType == DataFeedConfig.CommType.MESSAGE_QUEUE)
+            handleMessageQueue();
+    }
+
+    private void handleStream() {
+        if (streamProvider == null) {
+            reportError("Stream provider not available", null);
+            return;
+        }
+
+        if (dataParser instanceof IStreamProcessor processor) {
+            try {
+                processor.processStream(streamProvider.getInputStream(), dataBlock -> output.setData(dataBlock));
+            } catch (IOException e) {
+                reportError("Error processing stream", e);
             }
+        } else {
+            try {
+                // Use default line-by-line stream processor
+                LineBasedStreamProcessor defaultProcessor = new LineBasedStreamProcessor(executor, dataParser);
+                defaultProcessor.processStream(streamProvider.getInputStream(), dataBlock -> output.setData(dataBlock));
+            } catch (IOException e) {
+                reportError("Unable to process stream using default LineBasedStreamProcessor", e);
+            }
+        }
+    }
+
+    private void handleMessageQueue() {
+        if (messageQueueProvider == null) {
+            reportError("Message queue provider not available", null);
+            return;
+        }
+
+        messageQueueProvider.registerListener((attrs, payload) -> {
+            Map<String, Object> parsedData = dataParser.parse(payload);
+            DataBlock dataBlock = dataParser.createDataBlock(parsedData);
+            output.setData(dataBlock);
         });
-        processingThread.start();
     }
 
     /**
      * Signals the processing thread to stop.
      */
     public void stopProcessing() {
-        doProcessing = false;
+        doProcessing.set(false);
         try {
-            processingThread.interrupt();
-            if (commProvider != null && commProvider.isStarted())
-                commProvider.stop();
+            if (streamProvider != null && streamProvider.isStarted())
+                streamProvider.stop();
+            if (messageQueueProvider != null)
+                messageQueueProvider.stop();
         } catch (SensorHubException e) {
             reportError("Failed to stop processing", e);
         }

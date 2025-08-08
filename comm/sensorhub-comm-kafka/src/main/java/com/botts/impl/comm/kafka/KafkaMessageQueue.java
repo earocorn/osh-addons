@@ -3,20 +3,15 @@ package com.botts.impl.comm.kafka;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.config.Config;
-import org.apache.kafka.common.config.SecurityConfig;
+import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
-import org.apache.kafka.common.serialization.StringDeserializer;
 import org.sensorhub.api.comm.IMessageQueuePush;
-import org.sensorhub.api.comm.MessageQueueConfig;
 import org.sensorhub.api.common.SensorHubException;
 import org.sensorhub.impl.module.AbstractSubModule;
 import org.vast.util.Asserts;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -29,6 +24,7 @@ public class KafkaMessageQueue extends AbstractSubModule<KafkaMessageQueueConfig
     private KafkaProducer<byte[], byte[]> producer;
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
     private Thread consumerThread;
+    private final static String SECURITY_PROTOCOL_CONFIG = "security.protocol";
 
     @Override
     public void init(KafkaMessageQueueConfig config) throws SensorHubException {
@@ -44,7 +40,7 @@ public class KafkaMessageQueue extends AbstractSubModule<KafkaMessageQueueConfig
 
         if (config.enableTLS) {
             props.setProperty(SslConfigs.SSL_PROTOCOL_CONFIG, "TLSv1.2");
-            props.setProperty("security.protocol", "SSL");
+            props.setProperty(SECURITY_PROTOCOL_CONFIG, "SSL");
             props.setProperty(SslConfigs.SSL_ENABLED_PROTOCOLS_CONFIG, "TLSv1.2");
         }
 
@@ -58,12 +54,19 @@ public class KafkaMessageQueue extends AbstractSubModule<KafkaMessageQueueConfig
             props.setProperty(SslConfigs.SSL_KEYSTORE_TYPE_CONFIG, config.sslConfig.keyStoreFormat.toString());
         }
 
+        switch (config.authType) {
+            case SASL_SCRAM_SHA_256 -> configureSaslScramProps(props, true);
+            case SASL_SCRAM_SHA_512 -> configureSaslScramProps(props, false);
+            case SASL_KERBEROS -> configureKerberosProps(props);
+            case SASL_PLAINTEXT -> configureSaslPlaintextProps(props);
+        }
+
         props.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
         for (String prop : config.additionalProperties) {
             String[] split = prop.split("=");
             if (split.length == 2)
-                props.put(split[0].trim(), split[1].trim());
+                props.setProperty(split[0].trim(), split[1].trim());
         }
 
         if (config.enableSubscribe) {
@@ -73,6 +76,49 @@ public class KafkaMessageQueue extends AbstractSubModule<KafkaMessageQueueConfig
 
         if (config.enablePublish)
             producer = new KafkaProducer<>(props);
+    }
+
+    private void configureSaslScramProps(Properties props, boolean useSHA256) {
+        String jaasConfigString = "org.apache.kafka.common.security.scram.ScramLoginModule required username=\""
+                + escape(config.username) + "\" password=\"" + escape(config.password) + "\";";
+        props.setProperty(SECURITY_PROTOCOL_CONFIG, "SASL_SSL");
+        props.setProperty(SaslConfigs.SASL_JAAS_CONFIG, jaasConfigString);
+        if (useSHA256)
+            props.setProperty(SaslConfigs.SASL_MECHANISM, "SCRAM-SHA-256");
+        else
+            props.setProperty(SaslConfigs.SASL_MECHANISM, "SCRAM-SHA-512");
+    }
+
+    private void configureKerberosProps(Properties props) {
+        if (config.kerberosConfig != null) {
+            props.setProperty(SECURITY_PROTOCOL_CONFIG, "SASL_SSL");
+            props.setProperty(SaslConfigs.SASL_KERBEROS_SERVICE_NAME, config.kerberosConfig.serviceName);
+            props.setProperty(SaslConfigs.SASL_MECHANISM, "GSSAPI");
+            String escapedConfig = escape(config.kerberosConfig.keyTabLocation);
+            String escapedPrincipal = escape(config.kerberosConfig.principal);
+            String jaasConfig = "com.sun.security.auth.module.Krb5LoginModule required\n useKeyTab="
+                    + config.kerberosConfig.useKeyTab + "\n storeKey=" + config.kerberosConfig.storeKey + "\n keyTab=\""
+                    + escapedConfig + "\"\n principal=\"" + escapedPrincipal + "\";";
+            props.setProperty(SaslConfigs.SASL_JAAS_CONFIG, jaasConfig);
+        }
+    }
+
+    private void configureSaslPlaintextProps(Properties props) {
+        String jaasConfig = "org.apache.kafka.common.security.plain.PlainLoginModule required username=\""
+                + escape(config.username) + "\" password=\"" + escape(config.password) + "\";";
+        props.setProperty(SaslConfigs.SASL_MECHANISM, "PLAIN");
+        props.setProperty(SECURITY_PROTOCOL_CONFIG, "SASL_SSL");
+        props.setProperty(SaslConfigs.SASL_JAAS_CONFIG, jaasConfig);
+    }
+
+    private String escape(final String s) {
+        if (s == null) return null;
+        return s.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("'", "\\'")
+                .replace("\t", "\\t")
+                .replace("\r", "\\r")
+                .replace("\n", "\\n");
     }
 
     @Override

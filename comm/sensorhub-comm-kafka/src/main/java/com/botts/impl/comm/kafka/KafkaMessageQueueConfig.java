@@ -50,7 +50,8 @@ public class KafkaMessageQueueConfig extends MessageQueueConfig {
         NONE,
         SASL_PLAINTEXT,
         SASL_KERBEROS,
-        SASL_SCRAM,
+        SASL_SCRAM_SHA_256,
+        SASL_SCRAM_SHA_512,
     }
 
 }

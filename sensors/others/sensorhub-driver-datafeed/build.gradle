@@ -14,6 +14,9 @@ dependencies {
     embeddedImpl 'com.vaadin:vaadin-compatibility-client-compiled:8.14.3'
     embeddedImpl 'com.vaadin:vaadin-themes:8.14.3'
 
+    implementation("com.google.protobuf:protobuf-java:4.31.1")
+    implementation("com.google.protobuf:protobuf-java-util:4.31.1")
+
     testImplementation('junit:junit:4.13.1')
 }
 
@@ -23,7 +26,7 @@ test {
 
 osgi {
     manifest {
-        attributes ('Bundle-Vendor': 'My Company, Inc.')
+        attributes ('Bundle-Vendor': 'Botts Innovative Research, Inc.')
         attributes ('Bundle-Activator': 'com.botts.impl.sensor.datafeed.Activator')
     }
 }

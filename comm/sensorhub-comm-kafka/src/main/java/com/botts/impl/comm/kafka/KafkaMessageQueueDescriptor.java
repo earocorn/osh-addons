@@ -1,8 +1,6 @@
 package com.botts.impl.comm.kafka;
 
-import org.sensorhub.api.module.IModule;
-import org.sensorhub.api.module.IModuleProvider;
-import org.sensorhub.api.module.ModuleConfig;
+import org.sensorhub.api.module.*;
 import org.sensorhub.impl.module.JarModuleProvider;
 
 public class KafkaMessageQueueDescriptor extends JarModuleProvider implements IModuleProvider
@@ -22,14 +20,14 @@ public class KafkaMessageQueueDescriptor extends JarModuleProvider implements IM
     
 
     @Override
-    public Class<? extends IModule<?>> getModuleClass()
+    public Class<? extends IModuleBase<?>> getModuleClass()
     {
         return KafkaMessageQueue.class;
     }
     
 
     @Override
-    public Class<? extends ModuleConfig> getModuleConfigClass()
+    public Class<? extends ModuleConfigBase> getModuleConfigClass()
     {
         return KafkaMessageQueueConfig.class;
     }

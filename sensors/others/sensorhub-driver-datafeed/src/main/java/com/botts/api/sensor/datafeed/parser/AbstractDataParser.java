@@ -10,83 +10,50 @@ import org.vast.util.Asserts;
 import java.io.*;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static com.botts.impl.sensor.datafeed.DataFeedUtils.setComponentData;
 
 public abstract class AbstractDataParser implements IDataParser {
 
     private static final Logger log = LoggerFactory.getLogger(AbstractDataParser.class);
-    private DataParserConfig config;
-    boolean isRunning = false;
-    private Thread parserThread;
-    private DataComponent outputStructure;
-    private List<DataField> inputFields;
-    private Map<String, String> fieldMap;
+    private final DataComponent outputStructure;
+    private final List<DataField> inputFields;
+    private final Map<String, String> fieldMap;
 
     public List<DataField> getInputFields() {
         return inputFields;
     }
 
     public AbstractDataParser(DataParserConfig config, DataComponent outputStructure) {
-        this.config = config;
         Asserts.checkNotNull(config, "config");
-        // TODO Build structure from config
-        this.outputStructure = outputStructure;
-        Asserts.checkNotNull(config.outputStructure, "outputStructure");
+        Asserts.checkNotNull(config.outputStructure, "config.outputStructure");
+        this.outputStructure = Asserts.checkNotNull(outputStructure, "outputStructure");
 
-        // Ensure we are at least sorting by cardinality
-        this.inputFields = config.inputFields.stream()
-                .sorted(Comparator.comparingInt(d -> d.cardinality))
-                .toList();
-        Asserts.checkNotNull(inputFields, "inputFields");
+        // Ensure we are at least sorting by ordinality
+        this.inputFields = Asserts.checkNotNull(config.inputFields, "inputFields").stream()
+                .sorted(Comparator.comparingInt(d -> d.ordinality))
+                .collect(Collectors.toList());
 
-        this.fieldMap = new HashMap<>();
-        for (var fieldMapEntry : config.fieldMapping)
-            fieldMap.put(fieldMapEntry.inputFieldName, fieldMapEntry.outputFieldName);
+        this.fieldMap = config.fieldMapping.stream()
+                .collect(Collectors.toMap(
+                        entry -> entry.inputFieldName,
+                        entry -> entry.outputFieldName
+                ));
     }
 
     @Override
-    public void subscribe(InputStream inputStream, Consumer<DataBlock> handler) {
-        if (parserThread != null)
-            unsubscribe();
-        isRunning = true;
-
-        parserThread = new Thread(() -> {
-            try {
-                BufferedInputStream bis = new BufferedInputStream(inputStream);
-                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-                int b;
-                while ((b = bis.read()) != -1 && isRunning) {
-                    if (b == '\n') {
-                        byte[] line = buffer.toByteArray();
-                        buffer.reset();
-                        var data = parse(line);
-                        if (data != null)
-                            handler.accept(mappedData(data));
-                    } else {
-                        buffer.write(b);
-                    }
-                }
-            } catch (IOException e) {
-                log.error(e.getMessage(), e);
-            }
-        });
-
-        parserThread.start();
+    public DataComponent getRecordStructure() {
+        return outputStructure;
     }
 
     @Override
-    public void unsubscribe() {
-        parserThread.interrupt();
-        parserThread = null;
-        isRunning = false;
-    }
-
-    private DataBlock mappedData(Map<String, Object> data) {
+    public DataBlock createDataBlock(Map<String, Object> parsedData) {
         this.outputStructure.renewDataBlock();
+        // Set timestamp
         this.outputStructure.getComponent(0).getData().setDoubleValue(System.currentTimeMillis() / 1000d);
 
-        for (Map.Entry<String, Object> entry : data.entrySet()) {
+        for (Map.Entry<String, Object> entry : parsedData.entrySet()) {
             String inputFieldName = entry.getKey();
             Object value = entry.getValue();
             String outputFieldName = fieldMap.get(inputFieldName);
@@ -95,18 +62,7 @@ public abstract class AbstractDataParser implements IDataParser {
 
             setComponentData(this.outputStructure.getComponent(outputFieldName), value);
         }
-        // TODO: Check that component datablocks update parent datablock
         return this.outputStructure.getData();
     }
 
-    /**
-     * Parses the expected input to a map of data values
-     * and names from configured inputFields. The parsing method
-     * should use names and/or cardinality from the configured inputFields.
-     *
-     * @param data
-     * @return
-     */
-    @Override
-    public abstract Map<String, Object> parse(byte[] data);
 }

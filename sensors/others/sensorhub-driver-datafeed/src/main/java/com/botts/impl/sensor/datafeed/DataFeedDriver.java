@@ -51,6 +51,7 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
     ICommProvider<?> streamProvider;
     IMessageQueuePush<?> messageQueueProvider;
     IDataParser dataParser;
+    IStreamProcessor dataStreamProcessor;
     ExecutorService executor;
 
     @Override
@@ -136,20 +137,12 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
             return;
         }
 
-        if (dataParser instanceof IStreamProcessor processor) {
-            try {
-                processor.processStream(streamProvider.getInputStream(), dataBlock -> output.setData(dataBlock));
-            } catch (IOException e) {
-                reportError("Error processing stream", e);
-            }
-        } else {
-            try {
-                // Use default line-by-line stream processor
-                LineBasedStreamProcessor defaultProcessor = new LineBasedStreamProcessor(executor, dataParser);
-                defaultProcessor.processStream(streamProvider.getInputStream(), dataBlock -> output.setData(dataBlock));
-            } catch (IOException e) {
-                reportError("Unable to process stream using default LineBasedStreamProcessor", e);
-            }
+        dataStreamProcessor = dataParser instanceof IStreamProcessor processor ? processor : new LineBasedStreamProcessor(executor, dataParser);
+
+        try {
+            dataStreamProcessor.processStream(streamProvider.getInputStream(), dataBlock -> output.setData(dataBlock));
+        } catch (IOException e) {
+            reportError("Unable to process stream using default LineBasedStreamProcessor", e);
         }
     }
 
@@ -176,6 +169,8 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
                 streamProvider.stop();
             if (messageQueueProvider != null)
                 messageQueueProvider.stop();
+            if (dataStreamProcessor != null)
+                dataStreamProcessor.stop();
         } catch (SensorHubException e) {
             reportError("Failed to stop processing", e);
         }

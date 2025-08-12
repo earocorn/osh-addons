@@ -34,6 +34,7 @@ public class ProtobufDataParser extends AbstractDataParser implements IStreamPro
     public ProtobufDataParser(ProtobufDataParserConfig config, DataComponent outputStructure) {
         super(config, outputStructure);
         this.config = Asserts.checkNotNull(config, "config");
+        Asserts.checkNotNull(config.descFilePath);
 
         try {
             loadDescriptors(config.descFilePath);
@@ -46,7 +47,7 @@ public class ProtobufDataParser extends AbstractDataParser implements IStreamPro
             throw new IllegalArgumentException("No default message type found. Config value: " + config.defaultMessageType);
     }
 
-    private void loadDescriptors(String filepath) throws IOException, Descriptors.DescriptorValidationException {
+    public void loadDescriptors(String filepath) throws IOException, Descriptors.DescriptorValidationException {
         DescriptorProtos.FileDescriptorSet set = DescriptorProtos.FileDescriptorSet.parseFrom(new FileInputStream(filepath));
         Map<String, Descriptors.FileDescriptor> fileDescriptorMap = new HashMap<>();
 

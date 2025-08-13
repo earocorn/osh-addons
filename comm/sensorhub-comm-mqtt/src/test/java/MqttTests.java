@@ -1,4 +1,3 @@
-import com.botts.impl.comm.mqtt.MqttCommProvider;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;

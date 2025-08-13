@@ -23,20 +23,6 @@ public class CSVDataParser extends AbstractDataParser {
         this.config = config;
     }
 
-    public DataComponent parseDB(byte[] data){
-        String line = new String(data);
-        if (!hasSkippedHeader) {
-            hasSkippedHeader = true;
-            return null;
-        }
-
-        String[] values = line.split(config.delimiter);
-        if (values.length != getInputFields().size())
-            throw new IllegalArgumentException("Number of values (" + values.length +  ") does not match number of fields (" + getInputFields().size() + ")");
-
-
-    }
-
     @Override
     public Map<String, Object> parse(byte[] data) {
         String line = new String(data);

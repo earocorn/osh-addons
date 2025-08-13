@@ -80,9 +80,6 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
     public void doStart() throws SensorHubException {
         super.doStart();
 
-        System.out.println(config.commType);
-
-
         if(config.commType instanceof MsgQueueConfig){
             if (messageQueueProvider == null && ((MsgQueueConfig) config.commType).messageQueueCommSettings!= null)
                 messageQueueProvider = (IMessageQueuePush<?>) getParentHub().getModuleRegistry().loadSubModule(this, ((MsgQueueConfig) config.commType).messageQueueCommSettings, true);
@@ -133,21 +130,16 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
     public void startProcessing() {
         doProcessing.set(true);
 
-//        if(config.commType instanceof CommProviderConfig)
-//            handleStream();
-//        else if(config.commType instanceof MessageQueueConfig)
-//            handleMessageQueue();
-//        if (config.commType == DataFeedConfig.CommType.STREAM)
-//            handleStream();
-//        else if (config.commType == DataFeedConfig.CommType.MESSAGE_QUEUE)
-//            handleMessageQueue();
+        if(streamProvider != null) handleStream();
+        else if(messageQueueProvider != null) handleMessageQueue();
+
     }
 
     private void handleStream() {
-        if (streamProvider == null) {
-            reportError("Stream provider not available", null);
-            return;
-        }
+//        if (streamProvider == null) {
+//            reportError("Stream provider not available", null);
+//            return;
+//        }
 
         dataStreamProcessor = dataParser instanceof IStreamProcessor processor ? processor : new LineBasedStreamProcessor(executor, dataParser);
 
@@ -159,13 +151,14 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
     }
 
     private void handleMessageQueue() {
-        if (messageQueueProvider == null) {
-            reportError("Message queue provider not available", null);
-            return;
-        }
+//        if (messageQueueProvider == null) {
+//            reportError("Message queue provider not available", null);
+//            return;
+//        }
 
         messageQueueProvider.registerListener((attrs, payload) -> {
             Map<String, Object> parsedData = dataParser.parse(payload);
+            System.out.println("ParsedData: " + parsedData);
             DataBlock dataBlock = dataParser.createDataBlock(parsedData);
             output.setData(dataBlock);
         });

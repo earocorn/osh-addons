@@ -55,6 +55,7 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
             connectOptions.setKeepAliveInterval(60);
             connectOptions.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
             connectOptions.setConnectionTimeout(10);
+            connectOptions.setAutomaticReconnect(true);
 
             // auth
             if(config.username != null && !config.username.isBlank()){
@@ -76,13 +77,9 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
             getLogger().info("Connecting to MQTT Broker... "+ brokerURL);
 
 
-            mqttClient.connect();
-
-
             mqttClient.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable throwable) {
-                    getLogger().info("Connection to broker lost ", throwable.getMessage());
                 }
 
                 @Override
@@ -115,6 +112,8 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
                 }
             });
 
+
+            mqttClient.connect();
 
             Thread.sleep(1000);
 

@@ -26,5 +26,17 @@ ext.pom >>= {
       organization 'Sensia Software LLC'
       organizationUrl 'http://www.sensiasoftware.com'
     }
+    developer {
+      id 'kalynstricklin'
+      name 'Kalyn Stricklin'
+      organization 'Botts Innovative Research'
+      organizationUrl 'http://www.botts-inc.com'
+    }
+    developer {
+      id 'alexalmanza'
+      name 'Alex Almanza'
+      organization 'Botts Innovative Research'
+      organizationUrl 'http://www.botts-inc.com'
+    }
   }
 }

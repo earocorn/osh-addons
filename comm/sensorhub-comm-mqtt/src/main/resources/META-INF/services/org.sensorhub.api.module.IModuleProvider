@@ -1,1 +1,1 @@
-com.botts.impl.comm.mqtt.MqttCommModuleDescriptor
+com.botts.impl.comm.mqtt.MqttMessageQueueDescriptor

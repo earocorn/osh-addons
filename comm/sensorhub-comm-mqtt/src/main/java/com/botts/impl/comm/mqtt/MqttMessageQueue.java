@@ -57,14 +57,25 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
             mqttClient.setCallback(new MqttCallback() {
                 @Override
                 public void connectionLost(Throwable throwable) {
+                    getLogger().debug("Connection lost...");
+
+                    if(mqttClient.isConnected()) getLogger().debug("Connected");
+                    else {
+                        try {
+                            getLogger().debug("Trying to reconnect");
+                            mqttClient.reconnect();
+                        } catch (MqttException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
                 }
 
                 @Override
-                public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
-                    getLogger().debug("MSG Arrived -- topic: '{}', bytes: '{}'", config.topicName, mqttMessage.getPayload().length);
+                public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
+                    getLogger().debug("MSG Arrived -- topic: '{}', bytes: '{}'", topic, mqttMessage.getPayload().length);
 
                     Map<String, String> attributes = new HashMap<>();
-                    attributes.put("topic", config.topicName);
+                    attributes.put("topic", topic);
                     attributes.put("qos", String.valueOf(mqttMessage.getQos()));
                     attributes.put("retained", String.valueOf(mqttMessage.isRetained()));
 
@@ -72,14 +83,13 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
                     boolean accepted = messageQueue.offer(messageData);
 
                     if (!accepted) {
-                        getLogger().warn("Message queue is full, dropping message from topic: {}",  config.topicName);
+                        getLogger().warn("Message queue is full, dropping message from topic: {}", topic);
                     } else {
-                        getLogger().debug("Message queued for processing from topic: {}",  config.topicName);
+                        getLogger().debug("Message queued for processing from topic: {}",  topic);
                     }
 
-
                     Map<String, String> topicPayload = new HashMap<>();
-                    topicPayload.put( config.topicName, new String(mqttMessage.getPayload()));
+                    topicPayload.put(topic, new String(mqttMessage.getPayload()));
                     clientReceivedMqttMessage.put(clientId, topicPayload);
                 }
 
@@ -113,7 +123,6 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
         MqttConnectOptions connectOptions = new MqttConnectOptions();
         connectOptions.setCleanSession(true);
         connectOptions.setKeepAliveInterval(60);
-        connectOptions.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
         connectOptions.setConnectionTimeout(10);
         connectOptions.setAutomaticReconnect(true);
 
@@ -143,10 +152,13 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
         }
 
 
-
         if(config.enableSubscribe){
             try{
-                mqttClient.subscribe(config.topicName, qos);
+                for(String topic: config.topics){
+                    getLogger().info("Subscribed to topic: {}", topic);
+                    mqttClient.subscribe(topic, qos);
+                }
+//                mqttClient.subscribe(config.topicName, qos);
             } catch (MqttException e) {
                 throw new RuntimeException(e);
             }
@@ -155,7 +167,7 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
 
         isRunning.set(true);
 
-        workerThread = new Thread(this);
+        workerThread = new Thread(this, "Mqtt-Thread");
         workerThread.start();
 
     }
@@ -171,7 +183,6 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
                if(msgData != null){
                    for (MessageListener listener: listeners){
                        try{
-
                            getLogger().debug("receiving data: {}", msgData);
                            listener.receive(msgData.attributes, msgData.payload);
                        }catch (Exception e){
@@ -179,12 +190,10 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
                        }
                    }
                }
-
-            }catch(Exception e){
+            } catch(Exception e){
                 getLogger().error("Error: ", e);
             }
         }
-
     }
 
     /**

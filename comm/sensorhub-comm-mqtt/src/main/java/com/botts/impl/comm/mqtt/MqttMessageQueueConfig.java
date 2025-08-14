@@ -28,13 +28,13 @@ public class MqttMessageQueueConfig extends MessageQueueConfig {
     public List<String> topics;
 
     @DisplayInfo.Required
-    @DisplayInfo(label="Host Address", desc="The hostname or IP address of the MQTT Broker")
+    @DisplayInfo(label="Host Address", desc="The hostname or IP address and port of the MQTT Broker  (e.g. 100.10.10.10:8282/sensorhub")
     public String brokerAddress;
 
-    @DisplayInfo.ValueRange(min=0, max=65535)
-    @DisplayInfo.Required
-    @DisplayInfo(label="Port Number", desc="The port number to connect to on the broker addresses remote host")
-    public int port;
+//    @DisplayInfo.ValueRange(min=0, max=65535)
+//    @DisplayInfo.Required
+//    @DisplayInfo(label="Port Number", desc="The port number to connect to on the broker addresses remote host")
+//    public int port;
 
     @DisplayInfo.Required
     @DisplayInfo(label="Quality of Service", desc="Determines the reliability of the message delivery (0,1,2)")

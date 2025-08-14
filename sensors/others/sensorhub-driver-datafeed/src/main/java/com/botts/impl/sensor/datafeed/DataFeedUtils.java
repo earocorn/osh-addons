@@ -6,6 +6,7 @@ import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataType;
 import net.opengis.swe.v20.ScalarComponent;
+import org.vast.data.*;
 import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
 
@@ -32,6 +33,45 @@ public class DataFeedUtils {
         }
     }
 
+    public static void setDataBlockField(int index, DataBlock datum, DataBlock dataBlock){
+        if (datum instanceof DataBlockInt) {
+            setFieldData(index, ((DataBlockInt)datum).getUnderlyingObject()[index], dataBlock);
+        } else if (datum instanceof DataBlockDouble) {
+            setFieldData(index, ((DataBlockDouble)datum).getUnderlyingObject()[index], dataBlock);
+        } else if (datum instanceof DataBlockString) {
+            setFieldData(index, ((DataBlockString)datum).getUnderlyingObject()[index], dataBlock);
+        } else if (datum instanceof DataBlockBoolean) {
+            setFieldData(index, ((DataBlockBoolean)datum).getUnderlyingObject()[index], dataBlock);
+        } else if (datum instanceof DataBlockByte) {
+            setFieldData(index, ((DataBlockByte)datum).getUnderlyingObject()[index], dataBlock);
+        } else if (datum instanceof DataBlockFloat) {
+            setFieldData(index, ((DataBlockFloat)datum).getUnderlyingObject()[index], dataBlock);
+        } else if (datum instanceof DataBlockLong) {
+            setFieldData(index, ((DataBlockLong)datum).getUnderlyingObject()[index], dataBlock);
+        } else if (datum instanceof DataBlockShort) {
+            setFieldData(index, ((DataBlockShort)datum).getUnderlyingObject()[index], dataBlock);
+        } else if (datum instanceof DataBlockParallel) {
+            setFieldData(index, ((DataBlockParallel)datum).getUnderlyingObject()[index], dataBlock);
+        } else if (datum instanceof DataBlockMixed) {
+            setFieldData(index, ((DataBlockMixed)datum).getUnderlyingObject()[index], dataBlock);
+        } else if (datum instanceof DataBlockCompressed) {
+            setFieldData(index, ((DataBlockCompressed)datum).getUnderlyingObject()[index], dataBlock);
+        } else if (datum instanceof DataBlockDateTime) {
+            setFieldData(index, ((DataBlockDateTime)datum).getUnderlyingObject()[index], dataBlock);
+        } else if (datum instanceof DataBlockTuple) {
+            setFieldData(index, ((DataBlockTuple)datum).getUnderlyingObject()[index], dataBlock);
+        } else if (datum instanceof DataBlockList) {
+            setFieldData(index, ((DataBlockList)datum).get(index), dataBlock);
+        } else if (datum instanceof DataBlockProxy) {
+            setDataBlockField(index, ((DataBlockProxy)datum).getDataBlock(), dataBlock);
+        } else if(datum instanceof DataBlockUShort) {
+            setFieldData(index, ((DataBlockUShort)datum).getUnderlyingObject()[index], dataBlock);
+        } else if(datum instanceof DataBlockUInt) {
+            setFieldData(index, ((DataBlockUInt)datum).getUnderlyingObject()[index], dataBlock);
+        } else if(datum instanceof DataBlockUByte) {
+            setFieldData(index, ((DataBlockUByte)datum).getUnderlyingObject()[index], dataBlock);
+        }
+    }
     public static SWEBuilders.DataComponentBuilder<? extends SWEBuilders.SimpleComponentBuilder<?,?>, ? extends ScalarComponent> createDataComponent(DataComponentConfig config) {
         if (config == null)
             return null;
@@ -67,16 +107,15 @@ public class DataFeedUtils {
 
     public static Object parseValue(String rawValue, BaseDataType dataType) {
         try {
-            switch (dataType) {
-                case INTEGER: return Integer.parseInt(rawValue);
-                case DOUBLE: return Double.parseDouble(rawValue);
-                case FLOAT: return Float.parseFloat(rawValue);
-                case BYTE: return Byte.parseByte(rawValue);
-                case LONG: return Long.parseLong(rawValue);
-                case BOOLEAN: return Boolean.parseBoolean(rawValue);
-                case STRING:
-                default: return rawValue;
-            }
+            return switch (dataType) {
+                case INTEGER -> Integer.parseInt(rawValue);
+                case DOUBLE -> Double.parseDouble(rawValue);
+                case FLOAT -> Float.parseFloat(rawValue);
+                case BYTE -> Byte.parseByte(rawValue);
+                case LONG -> Long.parseLong(rawValue);
+                case BOOLEAN -> Boolean.parseBoolean(rawValue);
+                default -> rawValue;
+            };
         } catch (Exception e) {
             throw new IllegalArgumentException("Failed to parse value: " + rawValue + " as " + dataType.name(), e);
         }

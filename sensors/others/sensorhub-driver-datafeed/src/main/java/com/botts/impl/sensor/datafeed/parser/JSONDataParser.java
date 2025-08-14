@@ -14,6 +14,7 @@ import com.google.gwt.json.client.JSONObject;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 
+import javax.xml.crypto.Data;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,7 +42,8 @@ public class JSONDataParser extends AbstractDataParser implements IStreamProcess
     }
 
     @Override
-    public Map<String, Object> parse(byte[] data) {
+    public DataBlock parse(byte[] data) {
+        DataBlock dataBlock = getRecordStructure().createDataBlock();
         String jsonString = new String(data);
         JsonObject jsonObject;
         try {
@@ -51,9 +53,9 @@ public class JSONDataParser extends AbstractDataParser implements IStreamProcess
         }
 
         if (jsonObject == null)
-            return Collections.emptyMap();
+            return dataBlock;
 
-        Map<String, Object> dataMap = new HashMap<>();
+//        Map<String, Object> dataMap = new HashMap<>();
 
         for (DataField field : getInputFields()) {
             if (!jsonObject.has(field.name))
@@ -61,10 +63,13 @@ public class JSONDataParser extends AbstractDataParser implements IStreamProcess
 
             String rawValue = jsonObject.get(field.name).getAsString();
             Object realValue = DataFeedUtils.parseValue(rawValue, field.dataType);
-            dataMap.put(field.name, realValue);
+
+            DataFeedUtils.setFieldData(getRecordStructure().getComponentIndex(field.name), realValue, dataBlock);
+
+//            dataMap.put(field.name, realValue);
         }
 
-        return dataMap;
+        return dataBlock;
     }
 
     @Override

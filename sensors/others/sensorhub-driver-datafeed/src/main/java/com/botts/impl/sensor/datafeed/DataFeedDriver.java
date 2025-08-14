@@ -158,8 +158,8 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
         }
 
         messageQueueProvider.registerListener((attrs, payload) -> {
-            Map<String, Object> parsedData = dataParser.parse(payload);
-            DataBlock dataBlock = dataParser.createDataBlock(parsedData);
+            DataBlock dataBlock = dataParser.parse(payload);
+            System.out.println("datablock: "+ dataBlock);
             output.setData(dataBlock);
         });
     }

@@ -8,3 +8,12 @@ This module exposes common MQTT resources that can be used by other components (
 
 The default MQTT server and client implementations provided by this module are based on HiveMQ.
 
+### TCP
+topic: /sensorhub/api/datastreams/{dsId}/observations
+host address: <ip>:<port>
+protocol: tcp
+
+### WSS (https)
+protocol: wss
+topic: /api/datastreams/{dsId}/observations
+host address: <ip>:<port>/sensorhub

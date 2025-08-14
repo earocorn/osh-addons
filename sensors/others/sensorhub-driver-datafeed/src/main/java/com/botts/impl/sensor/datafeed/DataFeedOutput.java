@@ -128,6 +128,14 @@ public class DataFeedOutput extends VarRateSensorOutput<DataFeedDriver> {
         if (dataBlock.getAtomCount() != data.getAtomCount())
             throw new IllegalArgumentException("Driver output structure does not match parser output structure");
 
+
+        dataBlock.setDoubleValue(0, System.currentTimeMillis()/1000d);
+
+        for(int i=1; i < data.getAtomCount(); i++){
+            DataFeedUtils.setDataBlockField(i, data, dataBlock);
+//            DataFeedUtils.setFieldData(i, ((DataBlockMixed)data).getUnderlyingObject()[i], dataBlock);
+        }
+
         // Publish the data block
         latestRecord = data;
         latestRecordTime = data.getLongValue(0);

@@ -45,22 +45,22 @@ public abstract class AbstractDataParser implements IDataParser {
         return outputStructure;
     }
 
-    @Override
-    public DataBlock createDataBlock(Map<String, Object> parsedData) {
-        this.outputStructure.renewDataBlock();
-        // Set timestamp
-        this.outputStructure.getComponent(0).getData().setDoubleValue(System.currentTimeMillis() / 1000d);
-
-        for (Map.Entry<String, Object> entry : parsedData.entrySet()) {
-            String inputFieldName = entry.getKey();
-            Object value = entry.getValue();
-            String outputFieldName = fieldMap.get(inputFieldName);
-            if (outputFieldName == null)
-                throw new IllegalArgumentException("Fields are not mapped properly. Please check configuration");
-
-            setComponentData(this.outputStructure.getComponent(outputFieldName), value);
-        }
-        return this.outputStructure.getData();
-    }
+//    @Override
+//    public DataBlock createDataBlock(Map<String, Object> parsedData) {
+//        this.outputStructure.renewDataBlock();
+//        // Set timestamp
+//        this.outputStructure.getComponent(0).getData().setDoubleValue(System.currentTimeMillis() / 1000d);
+//
+//        for (Map.Entry<String, Object> entry : parsedData.entrySet()) {
+//            String inputFieldName = entry.getKey();
+//            Object value = entry.getValue();
+//            String outputFieldName = fieldMap.get(inputFieldName);
+//            if (outputFieldName == null)
+//                throw new IllegalArgumentException("Fields are not mapped properly. Please check configuration");
+//
+//            setComponentData(this.outputStructure.getComponent(outputFieldName), value);
+//        }
+//        return this.outputStructure.getData();
+//    }
 
 }

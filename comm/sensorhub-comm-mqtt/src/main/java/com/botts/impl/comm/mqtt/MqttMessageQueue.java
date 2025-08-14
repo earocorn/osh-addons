@@ -123,17 +123,10 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
             if(config.password != null)
                 connectOptions.setPassword(config.password.toCharArray());
         }
-
-
-        if(protocol.equals("ssl") || protocol.equals("wss")){
-//                SSLContext sslContext = SSLContext.getInstance("SSL");
-//                TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-//                KeyStore keyStore = readKeyStore();
-//                trustManagerFactory.init(keyStore);
-//                sslContext.init(null, trustManagerFactory.getTrustManagers(), new SecureRandom());
-//                connectOptions.setSocketFactory(sslContext.getSocketFactory());
+        
+        if(protocol.equals("ssl") || protocol.equals("wss")
             connectOptions.setSocketFactory(SSLSocketFactory.getDefault());
-        }
+
         return connectOptions;
     }
 

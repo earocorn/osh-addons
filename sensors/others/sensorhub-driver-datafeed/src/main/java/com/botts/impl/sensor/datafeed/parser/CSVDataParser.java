@@ -39,9 +39,9 @@ public class CSVDataParser extends AbstractDataParser {
 
 
         for (DataField field : getInputFields()) {
-            String rawValue = values[field.ordinality].trim();
+            String rawValue = values[field.index].trim();
             Object realValue = DataFeedUtils.parseValue(rawValue, field.dataType);
-            DataFeedUtils.setFieldData(field.ordinality, realValue, dataBlock);
+            DataFeedUtils.setFieldData(field.index, realValue, dataBlock);
         }
 
         return dataBlock;

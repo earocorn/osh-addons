@@ -137,8 +137,8 @@ public class DataFeedOutput extends VarRateSensorOutput<DataFeedDriver> {
         }
 
         // Publish the data block
-        latestRecord = data;
-        latestRecordTime = data.getLongValue(0);
-        eventHandler.publish(new DataEvent(latestRecordTime, DataFeedOutput.this, data));
+        latestRecord = dataBlock;
+        latestRecordTime = dataBlock.getLongValue(0);
+        eventHandler.publish(new DataEvent(latestRecordTime, DataFeedOutput.this, dataBlock));
     }
 }

@@ -23,6 +23,9 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.VarRateSensorOutput;
+import org.vast.data.AbstractDataBlock;
+import org.vast.data.DataBlockDouble;
+import org.vast.data.DataBlockMixed;
 import org.sensorhub.ui.DisplayUtils;
 import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEConstants;
@@ -139,6 +142,7 @@ public class DataFeedOutput extends VarRateSensorOutput<DataFeedDriver> {
         // Publish the data block
         latestRecord = dataBlock;
         latestRecordTime = dataBlock.getLongValue(0);
+
         eventHandler.publish(new DataEvent(latestRecordTime, DataFeedOutput.this, dataBlock));
     }
 }

@@ -123,8 +123,8 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
             if(config.password != null)
                 connectOptions.setPassword(config.password.toCharArray());
         }
-        
-        if(protocol.equals("ssl") || protocol.equals("wss")
+
+        if(protocol.equals("ssl") || protocol.equals("wss"))
             connectOptions.setSocketFactory(SSLSocketFactory.getDefault());
 
         return connectOptions;

@@ -3,6 +3,8 @@ package com.botts.impl.comm.mqtt;
 import org.sensorhub.api.comm.MessageQueueConfig;
 import org.sensorhub.api.config.DisplayInfo;
 
+import java.util.List;
+
 public class MqttMessageQueueConfig extends MessageQueueConfig {
 
 //    @DisplayInfo.Required
@@ -22,7 +24,11 @@ public class MqttMessageQueueConfig extends MessageQueueConfig {
     public Protocol protocol = Protocol.TCP;
 
     @DisplayInfo.Required
-    @DisplayInfo(label="Broker Address", desc="The hostname or IP address of the MQTT Broker")
+    @DisplayInfo(label="Topic", desc="")
+    public List<String> topics;
+
+    @DisplayInfo.Required
+    @DisplayInfo(label="Host Address", desc="The hostname or IP address of the MQTT Broker")
     public String brokerAddress;
 
     @DisplayInfo.ValueRange(min=0, max=65535)

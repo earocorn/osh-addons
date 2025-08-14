@@ -23,7 +23,7 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
     MqttClient mqttClient;
 
     private final BlockingQueue<MessageData> messageQueue = new LinkedBlockingQueue<>();
-    private Map<String, Map<String, String>> clientReceivedMqttMessage = new HashMap<>();
+    private final Map<String, Map<String, String>> clientReceivedMqttMessage = new HashMap<>();
 
     /**
      * 1. connect
@@ -50,31 +50,8 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
         try{
             mqttClient = new MqttClient(brokerURL, clientId);
 
-            MqttConnectOptions connectOptions = new MqttConnectOptions();
-            connectOptions.setCleanSession(true);
-            connectOptions.setKeepAliveInterval(60);
-            connectOptions.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
-            connectOptions.setConnectionTimeout(10);
-            connectOptions.setAutomaticReconnect(true);
-
-            // auth
-            if(config.username != null && !config.username.isBlank()){
-                connectOptions.setUserName(config.username);
-                if(config.password != null)
-                    connectOptions.setPassword(config.password.toCharArray());
-            }
-
-
-            if(protocol.equals("ssl") || protocol.equals("wss")){
-//                SSLContext sslContext = SSLContext.getInstance("SSL");
-//                TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-//                KeyStore keyStore = readKeyStore();
-//                trustManagerFactory.init(keyStore);
-//                sslContext.init(null, trustManagerFactory.getTrustManagers(), new SecureRandom());
-//                connectOptions.setSocketFactory(sslContext.getSocketFactory());
-                connectOptions.setSocketFactory(SSLSocketFactory.getDefault());
-            }
-            getLogger().info("Connecting to MQTT Broker... "+ brokerURL);
+            MqttConnectOptions connectOptions = getConnectOptions(config, protocol);
+            getLogger().info("Connecting to MQTT Broker {} ", brokerURL);
 
 
             mqttClient.setCallback(new MqttCallback() {
@@ -113,12 +90,11 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
             });
 
 
-            mqttClient.connect();
+            mqttClient.connect(connectOptions);
 
             Thread.sleep(1000);
 
-            if(mqttClient.isConnected())
-                getLogger().info("Connected to MQTT Broker, "+ brokerURL);
+            if(mqttClient.isConnected()) getLogger().info("Connected to MQTT Broker {}", brokerURL);
         } catch (MqttException e) {
             throw new SensorHubException("MQTT connection failed", e);
         } catch (InterruptedException e) {
@@ -129,6 +105,39 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
     }
 
     /**
+     * @param config
+     * @param protocol
+     * @return
+     */
+    private static MqttConnectOptions getConnectOptions(MqttMessageQueueConfig config, String protocol) {
+        MqttConnectOptions connectOptions = new MqttConnectOptions();
+        connectOptions.setCleanSession(true);
+        connectOptions.setKeepAliveInterval(60);
+        connectOptions.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
+        connectOptions.setConnectionTimeout(10);
+        connectOptions.setAutomaticReconnect(true);
+
+        // auth
+        if(config.username != null && !config.username.isBlank()){
+            connectOptions.setUserName(config.username);
+            if(config.password != null)
+                connectOptions.setPassword(config.password.toCharArray());
+        }
+
+
+        if(protocol.equals("ssl") || protocol.equals("wss")){
+//                SSLContext sslContext = SSLContext.getInstance("SSL");
+//                TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+//                KeyStore keyStore = readKeyStore();
+//                trustManagerFactory.init(keyStore);
+//                sslContext.init(null, trustManagerFactory.getTrustManagers(), new SecureRandom());
+//                connectOptions.setSocketFactory(sslContext.getSocketFactory());
+            connectOptions.setSocketFactory(SSLSocketFactory.getDefault());
+        }
+        return connectOptions;
+    }
+
+    /**
      *
      */
     @Override
@@ -136,7 +145,10 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
 
         int qos = config.qos.getValue();
 
-        if(!mqttClient.isConnected()) throw new SensorHubException("MQTT Client is not connected");
+        if(!mqttClient.isConnected()) {
+            throw new SensorHubException("MQTT Client is not connected");
+        }
+
 
 
         if(config.enableSubscribe){
@@ -167,6 +179,7 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
                    for (MessageListener listener: listeners){
                        try{
 
+                           getLogger().debug("receiving data: {}", msgData);
                            listener.receive(msgData.attributes, msgData.payload);
                        }catch (Exception e){
                            getLogger().error("Error in message listener", e);

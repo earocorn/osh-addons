@@ -14,6 +14,8 @@ package com.botts.impl.sensor.datafeed;
 import com.botts.api.sensor.datafeed.parser.DataParserConfig;
 import com.botts.api.sensor.datafeed.parser.IDataParser;
 import com.botts.api.sensor.datafeed.parser.IStreamProcessor;
+import com.botts.impl.sensor.datafeed.comm.MsgQueueCommConfig;
+import com.botts.impl.sensor.datafeed.comm.StreamConfig;
 import com.botts.impl.sensor.datafeed.parser.LineBasedStreamProcessor;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
@@ -69,28 +71,30 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
         output.init();
 
         Asserts.checkNotNull(config.dataParserConfig, "dataParserConfig");
-        Asserts.checkArgument(config.streamCommSettings != null || config.messageQueueCommSettings != null, "Must specify stream comm settings or message queue comm settings");
+        Asserts.checkArgument(config.commType != null, "Must specify stream comm settings or message queue comm settings");
     }
 
     @Override
     public void doStart() throws SensorHubException {
         super.doStart();
 
-        if (config.commType == DataFeedConfig.CommType.STREAM) {
-            if (streamProvider == null && config.streamCommSettings != null)
-                streamProvider = (ICommProvider<?>) getParentHub().getModuleRegistry().loadSubModule(config.streamCommSettings, true);
-            else if (config.streamCommSettings == null)
+        if(config.commType instanceof StreamConfig){
+            if (streamProvider == null && ((StreamConfig) config.commType).streamCommSettings!= null)
+                streamProvider = (ICommProvider<?>) getParentHub().getModuleRegistry().loadSubModule(((StreamConfig) config.commType).streamCommSettings, true);
+            else if (((StreamConfig) config.commType).streamCommSettings == null)
                 throw new SensorHubException("Stream communication selected but no stream comm settings specified");
             streamProvider.start();
             messageQueueProvider = null;
-        } else if (config.commType == DataFeedConfig.CommType.MESSAGE_QUEUE) {
-            if (messageQueueProvider == null && config.messageQueueCommSettings != null)
-                messageQueueProvider = (IMessageQueuePush<?>) getParentHub().getModuleRegistry().loadSubModule(this, config.messageQueueCommSettings, true);
-            else if (config.messageQueueCommSettings == null)
+        }else if(config.commType instanceof MsgQueueCommConfig){
+            if (messageQueueProvider == null && ((MsgQueueCommConfig) config.commType).messageQueueCommSettings != null)
+                messageQueueProvider = (IMessageQueuePush<?>) getParentHub().getModuleRegistry().loadSubModule(this, ((MsgQueueCommConfig) config.commType).messageQueueCommSettings, true);
+            else if (((MsgQueueCommConfig) config.commType).messageQueueCommSettings == null)
                 throw new SensorHubException("Message queue communication selected but no message queue comm settings specified");
             messageQueueProvider.start();
             streamProvider = null;
         }
+
+
 
         try {
             Class<?> clazz = config.dataParserConfig.getDataParserClass();
@@ -125,10 +129,11 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
     public void startProcessing() {
         doProcessing.set(true);
 
-        if (config.commType == DataFeedConfig.CommType.STREAM)
+        if(config.commType instanceof StreamConfig)
             handleStream();
-        else if (config.commType == DataFeedConfig.CommType.MESSAGE_QUEUE)
+        else if(config.commType instanceof MsgQueueCommConfig)
             handleMessageQueue();
+
     }
 
     private void handleStream() {

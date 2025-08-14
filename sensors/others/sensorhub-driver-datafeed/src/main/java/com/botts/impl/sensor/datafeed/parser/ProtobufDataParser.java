@@ -3,6 +3,7 @@ package com.botts.impl.sensor.datafeed.parser;
 import com.botts.api.sensor.datafeed.parser.AbstractDataParser;
 import com.botts.api.sensor.datafeed.parser.IStreamProcessor;
 import com.botts.impl.sensor.datafeed.DataFeedUtils;
+import com.botts.impl.sensor.datafeed.data.BaseDataType;
 import com.botts.impl.sensor.datafeed.data.DataField;
 import com.botts.impl.sensor.datafeed.parser.config.ProtobufDataParserConfig;
 import com.google.gson.JsonObject;
@@ -47,6 +48,27 @@ public class ProtobufDataParser extends AbstractDataParser implements IStreamPro
             throw new IllegalArgumentException("No default message type found. Config value: " + config.defaultMessageType);
     }
 
+    public DynamicMessage generateTestMessage() {
+        Descriptors.Descriptor msgDesc = descriptorMap.get("etf.ETFMessage");
+        Descriptors.Descriptor loginMsgDesc = descriptorMap.get("etf.EtfLoginMsg");
+
+        DynamicMessage loginMsg = DynamicMessage.newBuilder(loginMsgDesc)
+                .setField(loginMsgDesc.findFieldByName("hostname"), "hartmann")
+                .setField(loginMsgDesc.findFieldByName("ipaddr"), "65.105.136.92")
+                .setField(loginMsgDesc.findFieldByName("xref"), "https://www.normand-lesch.io/voluptatum/cumque?voluptatibus=consectetur&odio=beatae")
+                .setField(loginMsgDesc.findFieldByName("sendrecv"), 2)
+                .build();
+
+        var cmdField = msgDesc.findFieldByName("cmd");
+        var cmdEnum = cmdField.getEnumType();
+        var loginEnumValue = cmdEnum.findValueByName("ETF_LOGIN_MSG");
+
+        return DynamicMessage.newBuilder(msgDesc)
+                .setField(cmdField, loginEnumValue)
+                .setField(msgDesc.findFieldByName("loginmsg"), loginMsg)
+                .build();
+    }
+
     public void loadDescriptors(String filepath) throws IOException, Descriptors.DescriptorValidationException {
         DescriptorProtos.FileDescriptorSet set = DescriptorProtos.FileDescriptorSet.parseFrom(new FileInputStream(filepath));
         Map<String, Descriptors.FileDescriptor> fileDescriptorMap = new HashMap<>();
@@ -77,13 +99,12 @@ public class ProtobufDataParser extends AbstractDataParser implements IStreamPro
             Map<String, Object> dataMap = new HashMap<>();
 
             for (DataField field : getInputFields()) {
-                if (!object.has(field.name)) {
+                Object realValue = JSONDataParser.findInJsonObject(object, field.name, field.dataType);
+                if (realValue == null) {
                     logger.warn("Field {} has no data", field.name);
                     continue;
                 }
 
-                String rawValue = object.get(field.name).getAsString();
-                Object realValue = DataFeedUtils.parseValue(rawValue, field.dataType);
                 dataMap.put(field.name, realValue);
             }
 

@@ -6,17 +6,21 @@ import com.botts.impl.sensor.datafeed.data.DataField;
 import org.sensorhub.api.config.DisplayInfo;
 
 import java.util.Collection;
+import java.util.List;
 
 public abstract class DataParserConfig {
 
     @DisplayInfo.Required
-    public Collection<DataField> inputFields;
+    public List<DataField> inputFields;
 
     @DisplayInfo.Required
     public DataRecordConfig outputStructure = new DataRecordConfig();
 
     @DisplayInfo.Required
-    public Collection<FieldMapping> fieldMapping;
+    public List<FieldMapping> fieldMapping;
+
+    @DisplayInfo(desc = "If selected, output will be constructed based on input fields.")
+    public boolean useDefaultMapping = false;
 
     public abstract Class<? extends IDataParser> getDataParserClass();
 

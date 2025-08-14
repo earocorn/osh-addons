@@ -4,6 +4,7 @@ import com.botts.api.sensor.datafeed.parser.AbstractDataParser;
 import com.botts.api.sensor.datafeed.parser.DataParserConfig;
 import com.botts.api.sensor.datafeed.parser.IStreamProcessor;
 import com.botts.impl.sensor.datafeed.DataFeedUtils;
+import com.botts.impl.sensor.datafeed.data.BaseDataType;
 import com.botts.impl.sensor.datafeed.data.DataField;
 import com.botts.impl.sensor.datafeed.parser.config.JSONDataParserConfig;
 import com.google.gson.JsonObject;
@@ -23,6 +24,20 @@ public class JSONDataParser extends AbstractDataParser implements IStreamProcess
 
     public JSONDataParser(JSONDataParserConfig config, DataComponent outputStructure) {
         super(config, outputStructure);
+    }
+
+    public static Object findInJsonObject(JsonObject root, String key, BaseDataType dataType) {
+        if (root.has(key))
+            return DataFeedUtils.parseValue(root.get(key).getAsString(), dataType);
+
+        for (String objKey : root.keySet()) {
+            if (root.get(objKey).isJsonObject()) {
+                JsonObject object = (JsonObject) root.get(objKey);
+                Object result = findInJsonObject(object, key, dataType);
+                return result;
+            }
+        }
+        return null;
     }
 
     @Override

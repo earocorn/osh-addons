@@ -2,16 +2,22 @@ package com.botts.impl.sensor.datafeed.data;
 
 public class DataField {
 
-    public int ordinality;
+    public int index;
     public String name;
     public BaseDataType dataType;
 
-    public DataField(int ordinality, String name, String description, String definition, BaseDataType dataType) {
-        this.ordinality = ordinality;
+    public DataField(int index, String name, String description, String definition, BaseDataType dataType) {
+        this.index = index;
         this.name = name;
         this.dataType = dataType;
     }
 
     public DataField() {}
+
+    public DataField(int index, String name, BaseDataType dataType) {
+        this.index = index;
+        this.name = name;
+        this.dataType = dataType;
+    }
 
 }

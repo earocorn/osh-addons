@@ -7,9 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.util.Asserts;
 
-import java.io.*;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.botts.impl.sensor.datafeed.DataFeedUtils.setComponentData;
@@ -30,9 +28,9 @@ public abstract class AbstractDataParser implements IDataParser {
         Asserts.checkNotNull(config.outputStructure, "config.outputStructure");
         this.outputStructure = Asserts.checkNotNull(outputStructure, "outputStructure");
 
-        // Ensure we are at least sorting by ordinality
+        // Ensure we are at least sorting by index
         this.inputFields = Asserts.checkNotNull(config.inputFields, "inputFields").stream()
-                .sorted(Comparator.comparingInt(d -> d.ordinality))
+                .sorted(Comparator.comparingInt(d -> d.index))
                 .collect(Collectors.toList());
 
         this.fieldMap = config.fieldMapping.stream()

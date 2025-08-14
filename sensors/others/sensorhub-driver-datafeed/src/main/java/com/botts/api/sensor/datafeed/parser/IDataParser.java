@@ -9,7 +9,7 @@ public interface IDataParser {
 
     DataComponent getRecordStructure();
 
-    DataBlock createDataBlock(Map<String, Object> parsedData);
+//    DataBlock createDataBlock(Map<String, Object> parsedData);
 
-    Map<String, Object> parse(byte[] data);
+    DataBlock parse(byte[] data);
 }

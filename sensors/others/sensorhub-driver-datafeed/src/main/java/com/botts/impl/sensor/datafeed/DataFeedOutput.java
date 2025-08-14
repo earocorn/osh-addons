@@ -21,6 +21,9 @@ import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
 import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.VarRateSensorOutput;
+import org.vast.data.AbstractDataBlock;
+import org.vast.data.DataBlockDouble;
+import org.vast.data.DataBlockMixed;
 import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEConstants;
 import org.vast.swe.SWEHelper;
@@ -98,9 +101,18 @@ public class DataFeedOutput extends VarRateSensorOutput<DataFeedDriver> {
         if (dataBlock.getAtomCount() != data.getAtomCount())
             throw new IllegalArgumentException("Driver output structure does not match parser output structure");
 
+
+        dataBlock.setDoubleValue(0, System.currentTimeMillis()/1000d);
+
+        for(int i=1; i < data.getAtomCount(); i++){
+            DataFeedUtils.setDataBlockField(i, data, dataBlock);
+//            DataFeedUtils.setFieldData(i, ((DataBlockMixed)data).getUnderlyingObject()[i], dataBlock);
+        }
+
         // Publish the data block
-        latestRecord = data;
-        latestRecordTime = data.getLongValue(0);
-        eventHandler.publish(new DataEvent(latestRecordTime, DataFeedOutput.this, data));
+        latestRecord = dataBlock;
+        latestRecordTime = dataBlock.getLongValue(0);
+
+        eventHandler.publish(new DataEvent(latestRecordTime, DataFeedOutput.this, dataBlock));
     }
 }

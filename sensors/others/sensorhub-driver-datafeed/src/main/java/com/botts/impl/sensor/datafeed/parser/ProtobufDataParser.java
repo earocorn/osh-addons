@@ -65,14 +65,16 @@ public class ProtobufDataParser extends AbstractDataParser implements IStreamPro
     }
 
     @Override
-    public Map<String, Object> parse(byte[] data) {
+    public DataBlock parse(byte[] data) {
+        DataBlock dataBlock = getRecordStructure().createDataBlock();
+
         try {
             DynamicMessage message = DynamicMessage.parseFrom(defaultDescriptor, data);
             String jsonString = JsonFormat.printer().includingDefaultValueFields().print(message);
             JsonObject object = JsonParser.parseString(jsonString).getAsJsonObject();
 
             if (object == null)
-                return Collections.emptyMap();
+                return dataBlock;
 
             Map<String, Object> dataMap = new HashMap<>();
 
@@ -87,7 +89,7 @@ public class ProtobufDataParser extends AbstractDataParser implements IStreamPro
                 dataMap.put(field.name, realValue);
             }
 
-            return dataMap;
+            return dataBlock;
         } catch (InvalidProtocolBufferException e) {
             throw new IllegalStateException("Unable to parse message", e);
         }

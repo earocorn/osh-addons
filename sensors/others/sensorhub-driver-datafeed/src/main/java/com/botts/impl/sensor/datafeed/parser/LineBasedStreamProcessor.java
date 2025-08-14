@@ -48,9 +48,9 @@ public class LineBasedStreamProcessor implements IStreamProcessor {
                     String line;
                     while (isRunning.get() && (line = reader.readLine()) != null) {
                         try {
-                            Map<String, Object> parsed = parser.parse(line.getBytes());
-                            if (parsed != null && !parsed.isEmpty()) {
-                                DataBlock dataBlock = parser.createDataBlock(parsed);
+                            DataBlock dataBlock = parser.parse(line.getBytes());
+                            if (dataBlock != null) {
+
                                 consumer.accept(dataBlock);
                             }
                         } catch (Exception e) {

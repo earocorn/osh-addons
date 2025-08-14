@@ -5,6 +5,8 @@ import com.botts.impl.sensor.datafeed.DataFeedUtils;
 import com.botts.impl.sensor.datafeed.data.DataField;
 import com.botts.impl.sensor.datafeed.parser.config.CSVDataParserConfig;
 import java.util.Collections;
+
+import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import org.vast.sensorML.SMLHelper;
 import org.vast.swe.SWEHelper;
@@ -23,26 +25,47 @@ public class CSVDataParser extends AbstractDataParser {
         this.config = config;
     }
 
+
     @Override
-    public Map<String, Object> parse(byte[] data) {
+    public DataBlock parse(byte[] data) {
+        DataBlock dataBlock = getRecordStructure().createDataBlock();
+
         String line = new String(data);
         if (!hasSkippedHeader) {
             hasSkippedHeader = true;
-            return Collections.emptyMap();
+            return dataBlock;
         }
-
         String[] values = line.split(config.delimiter);
-        if (values.length != getInputFields().size())
-            throw new IllegalArgumentException("Number of values (" + values.length +  ") does not match number of fields (" + getInputFields().size() + ")");
 
-        Map<String, Object> dataMap = new HashMap<>();
-        int valueIndex = 0;
+
         for (DataField field : getInputFields()) {
-            String rawValue = values[valueIndex++].trim();
+            String rawValue = values[field.ordinality].trim();
             Object realValue = DataFeedUtils.parseValue(rawValue, field.dataType);
-            dataMap.put(field.name, realValue);
+            DataFeedUtils.setFieldData(field.ordinality, realValue, dataBlock);
         }
 
-        return dataMap;
+        return dataBlock;
     }
+
+
+//    @Override
+//    public Map<String, Object> parse(byte[] data) {
+//        String line = new String(data);
+//        if (!hasSkippedHeader) {
+//            hasSkippedHeader = true;
+//            return Collections.emptyMap();
+//        }
+//
+//        String[] values = line.split(config.delimiter);
+//
+//        Map<String, Object> dataMap = new HashMap<>();
+//        int valueIndex = 0;
+//        for (DataField field : getInputFields()) {
+//            String rawValue = values[field.ordinality].trim();
+//            Object realValue = DataFeedUtils.parseValue(rawValue, field.dataType);
+//            dataMap.put(field.name, realValue);
+//        }
+//
+//        return dataMap;
+//    }
 }

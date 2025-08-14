@@ -2,6 +2,7 @@ package com.botts.impl.sensor.datafeed.parser;
 
 import com.botts.api.sensor.datafeed.parser.AbstractDataParser;
 import com.botts.api.sensor.datafeed.parser.DataParserConfig;
+import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 
 import java.util.Map;
@@ -15,7 +16,7 @@ public class XMLDataParser extends AbstractDataParser {
     }
 
     @Override
-    public Map<String, Object> parse(byte[] data) {
+    public DataBlock parse(byte[] data) {
         return null;
     }
 }

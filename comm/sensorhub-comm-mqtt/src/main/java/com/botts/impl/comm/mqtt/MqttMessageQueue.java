@@ -42,10 +42,10 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
 
         String protocol = config.protocol.getName();
         String brokerAddress = config.brokerAddress;
-        int port = config.port;
+//        int port = config.port;
         String clientId = config.clientId;
 
-        String brokerURL = protocol + "://"+ brokerAddress +":" + port;
+        String brokerURL = protocol + "://"+ brokerAddress;
 
         try{
             mqttClient = new MqttClient(brokerURL, clientId);

@@ -46,26 +46,4 @@ public class CSVDataParser extends AbstractDataParser {
 
         return dataBlock;
     }
-
-
-//    @Override
-//    public Map<String, Object> parse(byte[] data) {
-//        String line = new String(data);
-//        if (!hasSkippedHeader) {
-//            hasSkippedHeader = true;
-//            return Collections.emptyMap();
-//        }
-//
-//        String[] values = line.split(config.delimiter);
-//
-//        Map<String, Object> dataMap = new HashMap<>();
-//        int valueIndex = 0;
-//        for (DataField field : getInputFields()) {
-//            String rawValue = values[field.ordinality].trim();
-//            Object realValue = DataFeedUtils.parseValue(rawValue, field.dataType);
-//            dataMap.put(field.name, realValue);
-//        }
-//
-//        return dataMap;
-//    }
 }

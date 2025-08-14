@@ -12,6 +12,7 @@
 package com.botts.impl.sensor.datafeed;
 
 import com.botts.api.sensor.datafeed.parser.DataParserConfig;
+import com.botts.impl.sensor.datafeed.comm.CommTypeConfig;
 import com.botts.impl.sensor.datafeed.parser.config.CSVDataParserConfig;
 import org.sensorhub.api.comm.CommProviderConfig;
 import org.sensorhub.api.comm.MessageQueueConfig;
@@ -41,19 +42,8 @@ public class DataFeedConfig extends SensorConfig {
 
     @DisplayInfo.Required
     @DisplayInfo(label = "Communication Type", desc = "Communication provider to use (stream or message queue)")
-    public CommType commType;
-
-    @DisplayInfo(desc = "Communication settings for using a stream (TCP, UDP, serial, etc.)")
-    public CommProviderConfig<?> streamCommSettings;
-
-    @DisplayInfo(desc = "Communication settings for using a Message Queue provider")
-    public MessageQueueConfig messageQueueCommSettings;
+    public CommTypeConfig commType;
 
     public DataParserConfig dataParserConfig;
-
-    public enum CommType {
-        STREAM,
-        MESSAGE_QUEUE
-    }
 
 }

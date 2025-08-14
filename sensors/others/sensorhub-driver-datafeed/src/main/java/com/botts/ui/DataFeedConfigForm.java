@@ -23,6 +23,7 @@ public class DataFeedConfigForm extends GenericConfigForm {
     private static final String PROP_INPUT_FIELDS = "inputFields";
     private static final String PROP_OUTPUT_STRUCT = "outputStructure";
     private static final String PROP_FIELDS = "fields";
+    private static final String PROP_COMM_TYPE = "commType";
 
     @Override
     public Map<String, Class<?>> getPossibleTypes(String propId, BaseProperty<?> prop) {
@@ -43,6 +44,19 @@ public class DataFeedConfigForm extends GenericConfigForm {
                     getOshLogger().error("{}: {}", ServiceConfigurationError.class.getName(), e.getMessage());
                 }
             }
+        }
+
+        if(propId.equals(PROP_COMM_TYPE)){
+            try
+            {
+                classList.put("Stream", Class.forName("com.botts.impl.sensor.datafeed.comm.StreamConfig"));
+                classList.put("Message Queue", Class.forName("com.botts.impl.sensor.datafeed.comm.MsgQueueCommConfig"));
+            }
+            catch (ClassNotFoundException e)
+            {
+                getOshLogger().error("Cannot find comm class", e);
+            }
+            return classList;
         }
 
         if (!classList.isEmpty())

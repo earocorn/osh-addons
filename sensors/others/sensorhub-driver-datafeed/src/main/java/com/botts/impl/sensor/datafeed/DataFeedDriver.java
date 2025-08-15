@@ -11,27 +11,20 @@
  ******************************* END LICENSE BLOCK ***************************/
 package com.botts.impl.sensor.datafeed;
 
-import com.botts.api.sensor.datafeed.parser.DataParserConfig;
 import com.botts.api.sensor.datafeed.parser.IDataParser;
 import com.botts.api.sensor.datafeed.parser.IStreamProcessor;
 import com.botts.impl.sensor.datafeed.comm.MsgQueueCommConfig;
 import com.botts.impl.sensor.datafeed.comm.StreamConfig;
-import com.botts.impl.sensor.datafeed.parser.LineBasedStreamProcessor;
 import net.opengis.swe.v20.DataBlock;
-import net.opengis.swe.v20.DataComponent;
 import org.sensorhub.api.comm.ICommProvider;
 import org.sensorhub.api.comm.IMessageQueuePush;
 import org.sensorhub.api.common.SensorHubException;
-import org.sensorhub.impl.module.ModuleRegistry;
 import org.sensorhub.impl.sensor.AbstractSensorModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.util.Asserts;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -70,7 +63,7 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
         addOutput(output, false);
         output.init();
 
-        Asserts.checkNotNull(config.dataParserConfig, "dataParserConfig");
+        Asserts.checkNotNull(config.parserType, "dataParserConfig");
         Asserts.checkArgument(config.commType != null, "Must specify stream comm settings or message queue comm settings");
     }
 
@@ -96,16 +89,16 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
 
 
 
-        try {
-            Class<?> clazz = config.dataParserConfig.getDataParserClass();
-            Constructor<?> constructor = clazz.getConstructor(config.dataParserConfig.getClass(), DataComponent.class);
-            dataParser = (IDataParser) constructor.newInstance(config.dataParserConfig, output.getRecordDescription());
-        } catch (Exception e) {
-            streamProvider = null;
-            messageQueueProvider = null;
-            dataParser = null;
-            throw new SensorHubException("Unable to initialize data parser", e);
-        }
+//        try {
+//            Class<?> clazz = config.dataParserConfig.getDataParserClass();
+//            Constructor<?> constructor = clazz.getConstructor(config.dataParserConfig.getClass(), DataComponent.class);
+//            dataParser = (IDataParser) constructor.newInstance(config.dataParserConfig, output.getRecordDescription());
+//        } catch (Exception e) {
+//            streamProvider = null;
+//            messageQueueProvider = null;
+//            dataParser = null;
+//            throw new SensorHubException("Unable to initialize data parser", e);
+//        }
 
         startProcessing();
     }
@@ -142,7 +135,7 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
             return;
         }
 
-        dataStreamProcessor = dataParser instanceof IStreamProcessor processor ? processor : new LineBasedStreamProcessor(executor, dataParser);
+        dataStreamProcessor = (IStreamProcessor) dataParser; //instanceof IStreamProcessor processor ? processor : new LineBasedStreamProcessor(executor, dataParser);
 
         try {
             dataStreamProcessor.processStream(streamProvider.getInputStream(), dataBlock -> output.setData(dataBlock));

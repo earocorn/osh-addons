@@ -1,7 +1,7 @@
 package com.botts.api.sensor.datafeed.parser;
 
-import com.botts.impl.sensor.datafeed.data.DataField;
-import net.opengis.swe.v20.DataBlock;
+
+import com.botts.impl.utils.data.DataField;
 import net.opengis.swe.v20.DataComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,23 +44,4 @@ public abstract class AbstractDataParser implements IDataParser {
     public DataComponent getRecordStructure() {
         return outputStructure;
     }
-
-//    @Override
-//    public DataBlock createDataBlock(Map<String, Object> parsedData) {
-//        this.outputStructure.renewDataBlock();
-//        // Set timestamp
-//        this.outputStructure.getComponent(0).getData().setDoubleValue(System.currentTimeMillis() / 1000d);
-//
-//        for (Map.Entry<String, Object> entry : parsedData.entrySet()) {
-//            String inputFieldName = entry.getKey();
-//            Object value = entry.getValue();
-//            String outputFieldName = fieldMap.get(inputFieldName);
-//            if (outputFieldName == null)
-//                throw new IllegalArgumentException("Fields are not mapped properly. Please check configuration");
-//
-//            setComponentData(this.outputStructure.getComponent(outputFieldName), value);
-//        }
-//        return this.outputStructure.getData();
-//    }
-
 }

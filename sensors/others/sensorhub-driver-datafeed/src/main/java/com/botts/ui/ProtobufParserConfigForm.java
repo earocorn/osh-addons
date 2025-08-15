@@ -1,10 +1,9 @@
 package com.botts.ui;
 
 import com.botts.api.sensor.datafeed.parser.DataParserConfig;
-import com.botts.impl.sensor.datafeed.data.BaseDataType;
-import com.botts.impl.sensor.datafeed.data.DataField;
-import com.botts.impl.sensor.datafeed.parser.ProtobufHelper;
-import com.botts.impl.sensor.datafeed.parser.config.ProtobufDataParserConfig;
+import com.botts.impl.sensor.datafeed.parsers.ProtobufConfig;
+import com.botts.impl.utils.ProtobufHelper;
+import com.botts.impl.utils.data.DataField;
 import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.Descriptors;
 import com.vaadin.event.Action;
@@ -26,7 +25,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -44,7 +42,7 @@ public class ProtobufParserConfigForm extends GenericConfigForm {
     private static final String PROP_FIELD = "field";
     private static final Action ENABLE_ACTION = new Action("Enable", FontAwesome.CHECK);
     private static final Action DISABLE_ACTION = new Action("Disable", FontAwesome.BAN);
-    private transient ProtobufDataParserConfig parserConfig;
+    private transient ProtobufConfig parserConfig;
     private transient TreeTable inputFieldsTable;
     private static AtomicBoolean usingOldFile = new AtomicBoolean(false);
     private static ConcurrentHashMap<String, Descriptors.Descriptor> descriptorMap = new ConcurrentHashMap<>();
@@ -52,7 +50,7 @@ public class ProtobufParserConfigForm extends GenericConfigForm {
     @Override
     public void build(String title, String popupText, MyBeanItem<Object> beanItem, boolean includeSubForms) {
         if (beanItem.getBean() instanceof DataParserConfig)
-            this.parserConfig = (ProtobufDataParserConfig)beanItem.getBean();
+            this.parserConfig = (ProtobufConfig) beanItem.getBean();
         super.build(title, popupText, beanItem, includeSubForms);
     }
 
@@ -143,7 +141,7 @@ public class ProtobufParserConfigForm extends GenericConfigForm {
                 select.addValueChangeListener(event -> {
                     var val = event.getProperty().getValue();
                     if (val != null) {
-                        parserConfig.defaultMessageType = val.toString();
+                        parserConfig.parserConfig.defaultMessageType = val.toString();
                         PROTO_MSG_TYPE.set(val.toString());
                         populateTable();
                     }

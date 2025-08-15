@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Bundle-Vendor: Sensia Software LLC
+Bundle-Activator: org.sensorhub.impl.sensor.fakeweather.Activator
+Bundle-SymbolicName: org.sensorhub.sensorhub-driver-fakeweather
+Bundle-Name: Simulated Weather Sensor
+Bundle-Description: Demo sensor outputting pseudo random weather measure
+ ments
+Bundle-Version: 1.0.0
+Bundle-BuildNumber: 2d07ace4
+Bundle-License: MPL 2.0 (http://mozilla.org/MPL/2.0)
+Bundle-Copyright: Copyright (c) Sensia Software LLC. All Rights Reserved
+

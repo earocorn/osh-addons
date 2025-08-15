@@ -13,9 +13,7 @@ package com.botts.impl.sensor.datafeed;
 
 import com.botts.api.sensor.datafeed.parser.DataParserConfig;
 import com.botts.impl.sensor.datafeed.comm.CommTypeConfig;
-import com.botts.impl.sensor.datafeed.parser.config.CSVDataParserConfig;
-import org.sensorhub.api.comm.CommProviderConfig;
-import org.sensorhub.api.comm.MessageQueueConfig;
+import com.botts.impl.sensor.datafeed.parsers.ParserConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 
@@ -44,6 +42,8 @@ public class DataFeedConfig extends SensorConfig {
     @DisplayInfo(label = "Communication Type", desc = "Communication provider to use (stream or message queue)")
     public CommTypeConfig commType;
 
-    public DataParserConfig dataParserConfig;
+    @DisplayInfo.Required
+    @DisplayInfo(label = "Parser Type", desc = "")
+    public ParserConfig parserType;
 
 }

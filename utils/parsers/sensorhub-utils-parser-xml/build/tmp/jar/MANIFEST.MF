@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Bundle-Vendor: Botts Innovative Research, Inc.
+Bundle-Activator: com.botts.impl.comm.mqtt.Activator
+Bundle-SymbolicName: org.sensorhub.sensorhub-utils-parser-xml
+Bundle-Name: CSV Parser
+Bundle-Description: 
+Bundle-Version: 1.0.0
+Bundle-BuildNumber: 2d07ace4
+Bundle-License: MPL 2.0 (http://mozilla.org/MPL/2.0)
+Bundle-Copyright: Copyright (c) Botts Innovative Research, Inc.. All Rig
+ hts Reserved
+

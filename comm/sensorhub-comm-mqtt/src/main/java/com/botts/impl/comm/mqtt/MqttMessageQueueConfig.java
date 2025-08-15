@@ -7,13 +7,6 @@ import java.util.List;
 
 public class MqttMessageQueueConfig extends MessageQueueConfig {
 
-//    @DisplayInfo.Required
-//    @DisplayInfo(label="Subscribe Topic", desc="A string the broker uses to filter messages for each individual connected client")
-//    public String subTopic;
-//
-//    @DisplayInfo.Required
-//    @DisplayInfo(label="Publish Topic", desc="A string the broker uses to filter messages for each individual connected client")
-//    public String pubTopic;
 
     @DisplayInfo.Required
     @DisplayInfo(label="Client", desc="A unique identifier for client, used by the broker to track connections")

@@ -12,10 +12,9 @@
 package com.botts.impl.sensor.datafeed;
 
 import com.botts.api.sensor.datafeed.parser.DataParserConfig;
-import com.botts.impl.sensor.datafeed.data.BaseDataType;
-import com.botts.impl.sensor.datafeed.data.DataComponentConfig;
-import com.botts.impl.sensor.datafeed.data.DataField;
-import com.botts.impl.sensor.datafeed.data.DataRecordConfig;
+import com.botts.impl.utils.data.DataComponentConfig;
+import com.botts.impl.utils.data.DataField;
+import com.botts.impl.utils.data.DataRecordConfig;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;

@@ -1,17 +1,7 @@
 package com.botts.ui;
 
-import com.botts.api.sensor.datafeed.parser.DataParserConfig;
-import com.botts.impl.sensor.datafeed.data.*;
 import com.vaadin.ui.*;
-import com.vaadin.v7.data.Property;
-import com.vaadin.v7.data.Validator;
-import com.vaadin.v7.ui.ComboBox;
-import com.vaadin.v7.ui.Field;
-import com.vaadin.v7.ui.Table;
-import org.sensorhub.ui.DisplayUtils;
-import org.sensorhub.ui.FieldWrapper;
 import org.sensorhub.ui.GenericConfigForm;
-import org.sensorhub.ui.ObjectTypeSelectionPopup;
 import org.sensorhub.ui.data.*;
 
 import java.util.*;
@@ -24,29 +14,30 @@ public class DataFeedConfigForm extends GenericConfigForm {
     private static final String PROP_OUTPUT_STRUCT = "outputStructure";
     private static final String PROP_FIELDS = "fields";
     private static final String PROP_COMM_TYPE = "commType";
+    private static final String PROP_PARSER_TYPE = "parserType";
 
     @Override
     public Map<String, Class<?>> getPossibleTypes(String propId, BaseProperty<?> prop) {
-        Map<String, Class<?>> classList = new LinkedHashMap<>();
-        if(propId.equals(PROP_PARSER_CONFIG)) {
-            ServiceLoader<DataParserConfig> sl = ServiceLoader.load(DataParserConfig.class);
-            var it = sl.iterator();
 
-            while (it.hasNext())
+        if(propId.equals(PROP_PARSER_TYPE)){
+            Map<String, Class<?>> classList = new LinkedHashMap<>();
+            try
             {
-                try
-                {
-                    DataParserConfig parserConfig = it.next();
-                    classList.put(parserConfig.getDataParserClass().getSimpleName(), parserConfig.getClass());
-                }
-                catch (ServiceConfigurationError e)
-                {
-                    getOshLogger().error("{}: {}", ServiceConfigurationError.class.getName(), e.getMessage());
-                }
+                classList.put("CSV", Class.forName("com.botts.impl.sensor.datafeed.parsers.CsvConfig"));
+                classList.put("JSON", Class.forName("com.botts.impl.sensor.datafeed.parsers.JsonConfig"));
+                classList.put("Line Based", Class.forName("com.botts.impl.sensor.datafeed.parsers.ParserConfig"));
+                classList.put("Protobuf", Class.forName("com.botts.impl.sensor.datafeed.parsers.ProtobufConfig"));
+                classList.put("XML", Class.forName("com.botts.impl.sensor.datafeed.parsers.XMLConfig"));
             }
+            catch (ClassNotFoundException e)
+            {
+                getOshLogger().error("Cannot find comm class", e);
+            }
+            return classList;
         }
 
-        if(propId.equals(PROP_COMM_TYPE)){
+         else if(propId.equals(PROP_COMM_TYPE)){
+            Map<String, Class<?>> classList = new LinkedHashMap<>();
             try
             {
                 classList.put("Stream", Class.forName("com.botts.impl.sensor.datafeed.comm.StreamConfig"));
@@ -58,9 +49,6 @@ public class DataFeedConfigForm extends GenericConfigForm {
             }
             return classList;
         }
-
-        if (!classList.isEmpty())
-            return classList;
 
         return super.getPossibleTypes(propId, prop);
     }

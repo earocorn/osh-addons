@@ -1,11 +1,10 @@
 package com.botts.api.sensor.datafeed.parser;
 
-import com.botts.impl.sensor.datafeed.data.DataRecordConfig;
-import com.botts.impl.sensor.datafeed.data.FieldMapping;
-import com.botts.impl.sensor.datafeed.data.DataField;
-import org.sensorhub.api.config.DisplayInfo;
 
-import java.util.Collection;
+import com.botts.impl.utils.data.DataField;
+import com.botts.impl.utils.data.DataRecordConfig;
+import com.botts.impl.utils.data.FieldMapping;
+import org.sensorhub.api.config.DisplayInfo;
 import java.util.List;
 
 public abstract class DataParserConfig {

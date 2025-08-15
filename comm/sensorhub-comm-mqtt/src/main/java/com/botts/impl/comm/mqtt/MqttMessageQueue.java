@@ -25,12 +25,6 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
     private final BlockingQueue<MessageData> messageQueue = new LinkedBlockingQueue<>();
     private final Map<String, Map<String, String>> clientReceivedMqttMessage = new HashMap<>();
 
-    /**
-     * 1. connect
-     * 2. publish
-     * 3. subscribe
-     * 4. deliver
-     */
 
     /**
      * @param config

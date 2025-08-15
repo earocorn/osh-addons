@@ -11,9 +11,8 @@
  ******************************* END LICENSE BLOCK ***************************/
 package com.botts.impl.sensor.datafeed;
 
-import com.botts.api.sensor.datafeed.parser.DataParserConfig;
 import com.botts.impl.sensor.datafeed.comm.CommTypeConfig;
-import com.botts.impl.sensor.datafeed.parsers.ParserConfig;
+import com.botts.api.parser.DataParserConfig;
 import org.sensorhub.api.config.DisplayInfo;
 import org.sensorhub.api.sensor.SensorConfig;
 
@@ -43,7 +42,7 @@ public class DataFeedConfig extends SensorConfig {
     public CommTypeConfig commType;
 
     @DisplayInfo.Required
-    @DisplayInfo(label = "Parser Type", desc = "")
-    public ParserConfig parserType;
+    @DisplayInfo(label = "Data Parser Type", desc = "Type of data parser")
+    public DataParserConfig dataParserConfig;
 
 }

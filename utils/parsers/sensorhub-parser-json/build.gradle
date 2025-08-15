@@ -1,0 +1,36 @@
+description = 'JSON Parser'
+ext.details = ''
+version = '1.0.0'
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+    implementation project(':sensorhub-parser-utils')
+}
+
+test {
+  useJUnit()
+}
+
+osgi {
+  manifest {
+    attributes ('Bundle-Vendor': 'Botts Innovative Research, Inc.')
+    attributes ('Bundle-Activator': 'com.botts.impl.comm.mqtt.Activator')
+  }
+}
+
+ext.pom >>= {
+  developers {
+    developer {
+      id 'earocorn'
+      name 'Alex Almanza'
+      organization 'Botts Innovative Research'
+      organizationUrl 'http://www.botts-inc.com'
+    }
+    developer {
+      id 'kalynstricklin'
+      name 'Kalyn Stricklin'
+      organization 'Botts Innovative Research'
+      organizationUrl 'http://www.botts-inc.com'
+    }
+  }
+}

@@ -1,8 +1,7 @@
 package com.botts.impl.sensor.datafeed;
 
-
-import com.botts.impl.utils.data.BaseDataType;
-import com.botts.impl.utils.data.DataComponentConfig;
+import com.botts.api.parser.data.BaseDataType;
+import com.botts.api.parser.data.DataComponentConfig;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataType;
@@ -10,8 +9,6 @@ import net.opengis.swe.v20.ScalarComponent;
 import org.vast.data.*;
 import org.vast.swe.SWEBuilders;
 import org.vast.swe.SWEHelper;
-
-import static com.botts.impl.utils.data.BaseDataType.*;
 
 public class DataFeedUtils {
     static SWEHelper fac = new SWEHelper();

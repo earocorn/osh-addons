@@ -11,34 +11,26 @@
  ******************************* END LICENSE BLOCK ***************************/
 package com.botts.impl.sensor.datafeed;
 
-import com.botts.api.sensor.datafeed.parser.DataParserConfig;
-import com.botts.impl.utils.data.DataComponentConfig;
-import com.botts.impl.utils.data.DataField;
-import com.botts.impl.utils.data.DataRecordConfig;
+
+import com.botts.api.parser.DataParserConfig;
+import com.botts.api.parser.data.BaseDataType;
+import com.botts.api.parser.data.DataComponentConfig;
+import com.botts.api.parser.data.DataField;
+import com.botts.api.parser.data.DataRecordConfig;
 import net.opengis.swe.v20.DataBlock;
 import net.opengis.swe.v20.DataComponent;
 import net.opengis.swe.v20.DataEncoding;
 import net.opengis.swe.v20.DataRecord;
 import org.sensorhub.api.data.DataEvent;
-import org.sensorhub.impl.sensor.AbstractSensorOutput;
 import org.sensorhub.impl.sensor.VarRateSensorOutput;
-import org.vast.data.AbstractDataBlock;
-import org.vast.data.DataBlockDouble;
-import org.vast.data.DataBlockMixed;
 import org.sensorhub.ui.DisplayUtils;
 import org.vast.swe.SWEBuilders;
-import org.vast.swe.SWEConstants;
-import org.vast.swe.SWEHelper;
 import org.vast.swe.helper.GeoPosHelper;
-import org.vast.swe.helper.VectorHelper;
 import org.vast.util.Asserts;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
-
-import static com.botts.impl.sensor.datafeed.DataFeedUtils.setFieldData;
 
 /**
  * DataFeedOutput specification and provider for {@link DataFeedDriver}.
@@ -48,7 +40,7 @@ public class DataFeedOutput extends VarRateSensorOutput<DataFeedDriver> {
     private final DataRecordConfig dataRecordConfig;
     private DataRecord dataRecord;
     private DataEncoding dataEncoding;
-    private DataParserConfig config;
+    private DataParserConfig dataParserConfig;
 
     /**
      * Creates a new output for the sensor driver.
@@ -57,13 +49,13 @@ public class DataFeedOutput extends VarRateSensorOutput<DataFeedDriver> {
      */
     DataFeedOutput(DataFeedDriver parentDriver) {
         super(parentDriver.getConfiguration().dataParserConfig.outputStructure.name, parentDriver, 1.0);
-        this.config = parentDriver.getConfiguration().dataParserConfig;
-        this.dataRecordConfig = config.useDefaultMapping ? createDefaultDataRecordConfig() : config.outputStructure;
+        this.dataParserConfig = parentDriver.getConfiguration().dataParserConfig;
+        this.dataRecordConfig = dataParserConfig.useDefaultMapping ? createDefaultDataRecordConfig() : dataParserConfig.outputStructure;
     }
 
     private DataRecordConfig createDefaultDataRecordConfig() {
         DataRecordConfig recordConfig = new DataRecordConfig();
-        var inputFields = Asserts.checkNotNull(config.inputFields, "inputFields").stream()
+        var inputFields = Asserts.checkNotNull(dataParserConfig.inputFields, "inputFields").stream()
                 .sorted(Comparator.comparingInt(d -> d.index))
                 .toList();
 
@@ -135,7 +127,6 @@ public class DataFeedOutput extends VarRateSensorOutput<DataFeedDriver> {
 
         for(int i=1; i < data.getAtomCount(); i++){
             DataFeedUtils.setDataBlockField(i, data, dataBlock);
-//            DataFeedUtils.setFieldData(i, ((DataBlockMixed)data).getUnderlyingObject()[i], dataBlock);
         }
 
         // Publish the data block

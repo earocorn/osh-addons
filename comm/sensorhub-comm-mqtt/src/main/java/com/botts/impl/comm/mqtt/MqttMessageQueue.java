@@ -127,7 +127,7 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
                 connectOptions.setPassword(config.password.toCharArray());
         }
 
-        if(protocol.equals("ssl") || protocol.equals("wss"))
+        if(protocol.equals("wss"))
             connectOptions.setSocketFactory(SSLSocketFactory.getDefault());
 
         return connectOptions;
@@ -148,11 +148,7 @@ public class MqttMessageQueue extends AbstractSubModule<MqttMessageQueueConfig> 
 
         if(config.enableSubscribe){
             try{
-                for(String topic: config.topics){
-                    getLogger().info("Subscribed to topic: {}", topic);
-                    mqttClient.subscribe(topic, qos);
-                }
-//                mqttClient.subscribe(config.topicName, qos);
+                mqttClient.subscribe(config.topicName, qos);
             } catch (MqttException e) {
                 throw new RuntimeException(e);
             }

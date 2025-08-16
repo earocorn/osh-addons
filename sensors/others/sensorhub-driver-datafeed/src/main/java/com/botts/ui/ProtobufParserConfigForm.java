@@ -1,7 +1,6 @@
 package com.botts.ui;
 
 import com.botts.api.sensor.datafeed.parser.DataParserConfig;
-import com.botts.impl.sensor.datafeed.data.BaseDataType;
 import com.botts.impl.sensor.datafeed.data.DataField;
 import com.botts.impl.sensor.datafeed.parser.ProtobufHelper;
 import com.botts.impl.sensor.datafeed.parser.config.ProtobufDataParserConfig;
@@ -9,6 +8,7 @@ import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.Descriptors;
 import com.vaadin.event.Action;
 import com.vaadin.server.FontAwesome;
+import com.vaadin.shared.ui.MarginInfo;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.v7.data.Item;
 import com.vaadin.v7.data.Property;
@@ -18,6 +18,7 @@ import com.vaadin.v7.ui.ComboBox;
 import com.vaadin.v7.ui.Field;
 import com.vaadin.v7.ui.Table;
 import com.vaadin.v7.ui.TreeTable;
+import org.sensorhub.ui.DisplayUtils;
 import org.sensorhub.ui.GenericConfigForm;
 import org.sensorhub.ui.data.ContainerProperty;
 import org.sensorhub.ui.data.MyBeanItem;
@@ -26,7 +27,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -183,12 +183,6 @@ public class ProtobufParserConfigForm extends GenericConfigForm {
             // possible fields table
             buildTable(layout);
 
-            this.inputFieldsTable.addValueChangeListener(event -> {
-                // TODO: Update this prop when config changes
-//                prop.get
-                prop.setValue(prop.getValue());
-            });
-
             subForms.add(layout);
         } else
             super.buildListComponent(propId, prop, fieldGroup);
@@ -226,7 +220,10 @@ public class ProtobufParserConfigForm extends GenericConfigForm {
             public String convertToPresentation(Descriptors.FieldDescriptor value, Class<? extends String> targetType, Locale locale) throws ConversionException {
                 if (value == null)
                     return null;
-                return value.getFullName();
+                if (value.getJavaType() == Descriptors.FieldDescriptor.JavaType.MESSAGE) {
+                    return value.getName() + " (" + value.getMessageType().getName() + ")";
+                } else
+                    return value.getName();
             }
 
             @Override
@@ -304,6 +301,9 @@ public class ProtobufParserConfigForm extends GenericConfigForm {
 
                     if (action == ENABLE_ACTION)
                     {
+//                        String[] split = fieldFullName.split("\\.");
+//                        String msg = split[split.length-1];
+//                        String type = fieldFullName.substring(0, fieldFullName.lastIndexOf("."));
                         addInputField(fieldFullName);
                     }
                     else if (action == DISABLE_ACTION)
@@ -316,46 +316,70 @@ public class ProtobufParserConfigForm extends GenericConfigForm {
             }
         });
 
-//        // detect all modules for which permissions are set
-//        // and add all root permissions to tree
-//        HashSet<String> moduleIdStrings = new HashSet<>();
-//        addTopLevelPermissions(moduleIdStrings, permConfig.allow);
-//        addTopLevelPermissions(moduleIdStrings, permConfig.deny);
-//        for (String moduleIdString: moduleIdStrings)
-//        {
-//            IPermission perm = getParentHub().getSecurityManager().getModulePermissions(moduleIdString);
-//            if (perm != null)
-//                addPermToTree(table, perm, null);
-//        }
-
         this.inputFieldsTable = table;
         layout.addComponent(table);
     }
 
-    private void addInputField(String fieldName) {
-        // TODO: Add to UI and config
-        if (descriptorMap != null && PROTO_MSG_TYPE.get() != null) {
-            var defaultDescriptor = descriptorMap.get(PROTO_MSG_TYPE.get());
-            if (defaultDescriptor == null)
-                return;
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void addInputField(String fullPath) {
+        if (descriptorMap == null || PROTO_MSG_TYPE.get() == null) {
+            return;
+        }
 
-            // TODO: If have fields, do it recursively
-            Descriptors.FieldDescriptor fieldDesc = findInDescriptor(defaultDescriptor, fieldName);
-            if (fieldDesc != null) {
-                if (fieldDesc.getJavaType() == Descriptors.FieldDescriptor.JavaType.MESSAGE && inputFieldsTable.hasChildren(fieldName))
-                    for (var child : fieldDesc.getMessageType().getFields())
-                        addInputField(child.getFullName());
-                // TODO: Change this
-                // Check if already in config
-                for (int i = 0; i < parserConfig.inputFields.size(); i++)
-                    if (Objects.equals(parserConfig.inputFields.get(i).name, fieldName))
-                        return;
-                // Add new field
-                DataField field = new DataField(fieldDesc.getIndex(), fieldName, ProtobufHelper.toBaseDataType(fieldDesc.getJavaType()));
-                parserConfig.inputFields.add(field);
+        // Root descriptor (e.g., etf.ETFMessage)
+        Descriptors.Descriptor rootDescriptor = descriptorMap.get(PROTO_MSG_TYPE.get());
+        if (rootDescriptor == null) {
+            return;
+        }
+
+        if (fullPath == null) {
+            return;
+        }
+
+        // Avoid duplicates
+        if (parserConfig.inputFields.stream().anyMatch(f -> f.name.equals(fullPath))) {
+            return;
+        }
+
+        // Find final descriptor to get type info
+        Descriptors.FieldDescriptor finalField = findFieldByPath(rootDescriptor, fullPath);
+        if (finalField != null) {
+            if (finalField.getJavaType() == Descriptors.FieldDescriptor.JavaType.MESSAGE) {
+                for (var subField : finalField.getMessageType().getFields())
+                    // TODO BUILD FULL PATH HERE FOR CHILDREN
+                    addInputField(buildFullPath(subField, fullPath));
             }
+            parserConfig.inputFields.add(
+                    new DataField(finalField.getIndex(), fullPath, ProtobufHelper.toBaseDataType(finalField.getJavaType()))
+            );
         }
     }
+
+    private String buildFullPath(Descriptors.FieldDescriptor descriptor, String parentPath) {
+        return (parentPath == null || parentPath.isEmpty())
+                ? descriptor.getContainingType().getFullName() + "." + descriptor.getName()
+                : parentPath + "." + descriptor.getName();
+    }
+
+    private Descriptors.FieldDescriptor findFieldByPath(Descriptors.Descriptor descriptor, String fullPath) {
+        String[] parts = fullPath.split("\\.");
+        Descriptors.Descriptor current = descriptor;
+        Descriptors.FieldDescriptor fieldDesc = null;
+
+        // Skip the first part (package) and the root message name
+        int startIndex = parts.length > 2 ? 2 : 0;
+        for (int i = startIndex; i < parts.length; i++) {
+            fieldDesc = current.findFieldByName(parts[i]);
+            if (fieldDesc == null) {
+                return null;
+            }
+            if (i < parts.length - 1 && fieldDesc.getJavaType() == Descriptors.FieldDescriptor.JavaType.MESSAGE) {
+                current = fieldDesc.getMessageType();
+            }
+        }
+        return fieldDesc;
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private Descriptors.FieldDescriptor findInDescriptor(Descriptors.Descriptor descriptor, String fullFieldName) {
         for (Descriptors.FieldDescriptor fieldDescriptor : descriptor.getFields()) {
@@ -372,49 +396,28 @@ public class ProtobufParserConfigForm extends GenericConfigForm {
 
     private void removeInputField(String fieldName) {
         // TODO: Remove from UI
-        if (descriptorMap != null && PROTO_MSG_TYPE.get() != null) {
-            var defaultDescriptor = descriptorMap.get(PROTO_MSG_TYPE.get());
-            if (defaultDescriptor == null)
-                return;
+        if (descriptorMap == null || PROTO_MSG_TYPE.get() == null)
+            return;
 
-            // TODO: If have fields, do it recursively
-            Descriptors.FieldDescriptor fieldDesc = findInDescriptor(defaultDescriptor, fieldName);
-            if (fieldDesc != null) {
-                if (fieldDesc.getJavaType() == Descriptors.FieldDescriptor.JavaType.MESSAGE)
-                    for (var child : fieldDesc.getMessageType().getFields())
-                        removeInputField(child.getFullName());
-                for (int i = 0; i < parserConfig.inputFields.size(); i++)
-                    if (Objects.equals(parserConfig.inputFields.get(i).name, fieldName))
-                        parserConfig.inputFields.remove(i);
-            }
-        }
+        // If removing a tree, remove recursively
+        if (inputFieldsTable.hasChildren(fieldName))
+            for (var childId : inputFieldsTable.getChildren(fieldName))
+                removeInputField(childId.toString());
+
+        parserConfig.inputFields.removeIf(f -> Objects.equals(f.name, fieldName));
     }
 
     private void refreshFields(TreeTable table) {
+        DisplayUtils.showOperationSuccessful("Current number of input fields: " + parserConfig.inputFields.size());
         for (Object itemId : table.getContainerDataSource().getItemIds()) {
-//            if (table.hasChildren(itemId))
-//                continue;
             Item item = table.getItem(itemId);
-            Descriptors.FieldDescriptor field = (Descriptors.FieldDescriptor) item.getItemProperty(PROP_FIELD).getValue();
-            item.getItemProperty(PROP_STATE).setValue(getState(field));
-            try {
-                commit();
-            } catch (FieldGroup.CommitException e) {
-                getOshLogger().warn("Commit failed", e);
-            }
+            item.getItemProperty(PROP_STATE).setValue(getState(itemId.toString()));
         }
     }
 
-    private FieldState getState(Descriptors.FieldDescriptor field) {
-        FieldState state = FieldState.DISABLED;
-        var fieldIterator = parserConfig.inputFields.iterator();
-        while (fieldIterator.hasNext()) {
-            if (Objects.equals(fieldIterator.next().name, field.getFullName())) {
-                state = FieldState.ENABLED;
-                break;
-            }
-        }
-        return state;
+    private FieldState getState(String fullPath) {
+        return parserConfig.inputFields.stream().anyMatch(f -> Objects.equals(f.name, fullPath))
+                ? FieldState.ENABLED : FieldState.DISABLED;
     }
 
     private void populateTable() {
@@ -425,7 +428,7 @@ public class ProtobufParserConfigForm extends GenericConfigForm {
             if (defaultDesc != null) {
                 clearTree();
                 for (var field : defaultDesc.getFields())
-                    addFieldToTree(inputFieldsTable, field, null);
+                    addFieldToTree(inputFieldsTable, field, null, "");
             }
         }
     }
@@ -446,13 +449,18 @@ public class ProtobufParserConfigForm extends GenericConfigForm {
         inputFieldsTable.removeItem(item);
     }
 
-    private synchronized void addFieldToTree(TreeTable table, Descriptors.FieldDescriptor descriptor, Object parentId) {
-        Object newItemId = descriptor.getFullName();
+    private synchronized void addFieldToTree(TreeTable table, Descriptors.FieldDescriptor descriptor, Object parentId, String parentPath) {
+        String fullRootPath = (parentPath == null || parentPath.isEmpty())
+                ? descriptor.getContainingType().getFullName() + "." + descriptor.getName()
+                : parentPath + "." + descriptor.getName();
+
+        Object newItemId = fullRootPath;
         Item newItem = table.getItem(newItemId);
         if (newItem == null)
             newItem = table.addItem(newItemId);
+
         newItem.getItemProperty(PROP_FIELD).setValue(descriptor);
-        newItem.getItemProperty(PROP_STATE).setValue(getState(descriptor));
+        newItem.getItemProperty(PROP_STATE).setValue(getState(fullRootPath));
 
         if (parentId != null)
             table.setParent(newItemId, parentId);
@@ -461,8 +469,7 @@ public class ProtobufParserConfigForm extends GenericConfigForm {
             table.setChildrenAllowed(newItemId, false);
         else {
             for (Descriptors.FieldDescriptor childDesc : descriptor.getMessageType().getFields())
-//            var childDesc = descriptor.getMessageType().getFields().get(0);
-                addFieldToTree(table, childDesc, newItemId);
+                addFieldToTree(table, childDesc, newItemId, fullRootPath);
         }
     }
 

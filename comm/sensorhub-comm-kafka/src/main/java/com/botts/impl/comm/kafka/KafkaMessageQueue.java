@@ -142,9 +142,7 @@ public class KafkaMessageQueue extends AbstractSubModule<KafkaMessageQueueConfig
                     for (MessageListener listener : listeners) {
                         HashMap<String, String> attributes = new HashMap<>();
                         attributes.put("key", Arrays.toString(consumerRecord.key()));
-                        consumerRecord.headers().forEach(header -> {
-                            attributes.put(header.key(), Arrays.toString(header.value()));
-                        });
+                        consumerRecord.headers().forEach(header -> attributes.put(header.key(), Arrays.toString(header.value())));
                         listener.receive(attributes, consumerRecord.value());
                     }
             }

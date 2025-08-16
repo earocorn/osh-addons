@@ -8,17 +8,16 @@ import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.Descriptors;
 import com.vaadin.event.Action;
 import com.vaadin.server.FontAwesome;
-import com.vaadin.shared.ui.MarginInfo;
-import com.vaadin.ui.HorizontalLayout;
+import com.vaadin.ui.Alignment;
+import com.vaadin.ui.Button;
+import com.vaadin.ui.Component;
 import com.vaadin.v7.data.Item;
 import com.vaadin.v7.data.Property;
 import com.vaadin.v7.data.fieldgroup.FieldGroup;
 import com.vaadin.v7.data.util.converter.Converter;
-import com.vaadin.v7.ui.ComboBox;
-import com.vaadin.v7.ui.Field;
-import com.vaadin.v7.ui.Table;
-import com.vaadin.v7.ui.TreeTable;
+import com.vaadin.v7.ui.*;
 import org.sensorhub.ui.DisplayUtils;
+import org.sensorhub.ui.FieldWrapper;
 import org.sensorhub.ui.GenericConfigForm;
 import org.sensorhub.ui.data.ContainerProperty;
 import org.sensorhub.ui.data.MyBeanItem;
@@ -76,44 +75,10 @@ public class ProtobufParserConfigForm extends GenericConfigForm {
                 descriptorMap.put(messageType.getFullName(), messageType);
         }
 
-        this.descriptorMap.clear();
-        this.descriptorMap.putAll(descriptorMap);
+        ProtobufParserConfigForm.descriptorMap.clear();
+        ProtobufParserConfigForm.descriptorMap.putAll(descriptorMap);
 
         return descriptorMap.values();
-
-//        List<String> leafMessages = new ArrayList<>();
-//        Set<String> visited = new HashSet<>();
-//
-//        // Iterate through each top-level message
-//        for (var entry : descriptorMap.entrySet()) {
-//            Queue<Descriptors.Descriptor> queue = new ArrayDeque<>();
-//            queue.add(entry.getValue());
-//
-//            while (!queue.isEmpty()) {
-//                Descriptors.Descriptor current = queue.poll();
-//                if (!visited.add(current.getFullName())) {
-//                    continue; // skip already processed
-//                }
-//
-//                List<Descriptors.FieldDescriptor> fields = current.getFields();
-//                boolean hasMessageField = false;
-//
-//                for (Descriptors.FieldDescriptor field : fields) {
-//                    if (field.getJavaType() == Descriptors.FieldDescriptor.JavaType.MESSAGE) {
-//                        hasMessageField = true;
-//                        queue.add(field.getMessageType());
-//                    } else {
-//                        leafMessages.add(field.getFullName());
-//                    }
-//                }
-//
-//                if (!hasMessageField) {
-//                    leafMessages.add(current.getFullName());
-//                }
-//            }
-//        }
-
-//        return leafMessages;
     }
 
     @Override
@@ -150,7 +115,45 @@ public class ProtobufParserConfigForm extends GenericConfigForm {
                 });
 
                 fieldGroup.bind(select, propId);
-                return select;
+
+                return new FieldWrapper<>(select) {
+                    @Override
+                    protected Component initContent() {
+                        HorizontalLayout layout = new HorizontalLayout();
+                        layout.setSpacing(true);
+
+                        layout.addComponent(select);
+                        layout.setComponentAlignment(select, Alignment.MIDDLE_LEFT);
+//                        final Field<Object> wrapper = this;
+
+                        Button refreshButton = new Button(FontAwesome.REFRESH);
+                        refreshButton.setDescription("Refresh File");
+                        refreshButton.addStyleName(STYLE_QUIET);
+                        layout.addComponent(refreshButton);
+                        layout.setComponentAlignment(refreshButton, Alignment.MIDDLE_LEFT);
+                        refreshButton.addClickListener(event -> {
+                            select.removeAllItems();
+                            Collection<Descriptors.Descriptor> possibleValues = null;
+                            try {
+                                possibleValues = getProtoFields();
+                            } catch (IOException | Descriptors.DescriptorValidationException e) {
+                                getOshLogger().error("Unable to retrieve fields. Please make sure that the file/path is valid", e);
+                            }
+
+                            if (possibleValues == null)
+                                return;
+
+                            for (Descriptors.Descriptor descriptor : possibleValues) {
+                                if (descriptor == null) {
+                                    select.setNewItemsAllowed(true);
+                                    select.setImmediate(true);
+                                } else
+                                    select.addItem(descriptor.getFullName());
+                            }
+                        });
+                        return layout;
+                    }
+                };
             } catch (Descriptors.DescriptorValidationException | IOException e) {
                 getOshLogger().warn("Unable to create combo box options", e);
             }
@@ -408,7 +411,7 @@ public class ProtobufParserConfigForm extends GenericConfigForm {
     }
 
     private void refreshFields(TreeTable table) {
-        DisplayUtils.showOperationSuccessful("Current number of input fields: " + parserConfig.inputFields.size());
+        table.getParent().setCaption(parserConfig.inputFields.size() + " fields enabled");
         for (Object itemId : table.getContainerDataSource().getItemIds()) {
             Item item = table.getItem(itemId);
             item.getItemProperty(PROP_STATE).setValue(getState(itemId.toString()));

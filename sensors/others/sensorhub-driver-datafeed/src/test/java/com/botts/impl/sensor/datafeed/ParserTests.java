@@ -50,28 +50,28 @@ public class ParserTests {
     @Test
     public void testProtobuf() throws Descriptors.DescriptorValidationException, IOException {
         ProtobufDataParserConfig config = new ProtobufDataParserConfig();
-        config.inputFields = sampleFields;
-        DataField hostname = new DataField();
-        hostname.name = "hostname";
-        hostname.dataType = BaseDataType.STRING;
-
-        DataField ipaddr = new DataField();
-        ipaddr.name = "ipaddr";
-        ipaddr.dataType = BaseDataType.STRING;
-
-        DataField xref = new DataField();
-        xref.name = "xref";
-        xref.dataType = BaseDataType.STRING;
-
-        config.inputFields.addAll(Set.of(hostname, ipaddr, xref));
+        config.inputFields = getTestFields();
+        config.useDefaultMapping = true;
         config.fieldMapping = sampleMapping;
         config.defaultMessageType = "etf.ETFMessage";
         config.descFilePath = "../../../../../raft_out.desc";
         ProtobufDataParser parser = new ProtobufDataParser(config, new DataRecordImpl());
         DynamicMessage testMsg = parser.generateTestMessage();
         var parsed = parser.parse(testMsg.toByteArray());
+        for (var i : parsed.entrySet())
+            System.out.println(i.getKey() + " : " + i.getValue());
         // Create ui for field input selection
         // hostname, ipaddr, xref
+    }
+
+    private List<DataField> getTestFields() {
+        List<DataField> testFields = new ArrayList<>();testFields.add(new DataField(0, "etf.ETFMessage.cmd", BaseDataType.STRING));
+        testFields.add(new DataField(0, "etf.ETFMessage.loginmsg.hostname", BaseDataType.STRING));
+        testFields.add(new DataField(1, "etf.ETFMessage.loginmsg.ipaddr", BaseDataType.STRING));
+        testFields.add(new DataField(2, "etf.ETFMessage.loginmsg.xref", BaseDataType.STRING));
+        testFields.add(new DataField(3, "etf.ETFMessage.loginmsg.sendrecv", BaseDataType.INTEGER));
+        testFields.add(new DataField(3, "etf.ETFMessage.loginmsg", null));
+        return testFields;
     }
 
     @Test

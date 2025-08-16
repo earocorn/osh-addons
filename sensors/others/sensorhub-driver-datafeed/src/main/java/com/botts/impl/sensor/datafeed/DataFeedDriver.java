@@ -52,12 +52,10 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
     IMessageQueuePush<?> messageQueueProvider;
     IDataParser dataParser;
     IStreamProcessor dataStreamProcessor;
-    ExecutorService executor;
 
     @Override
     public void doInit() throws SensorHubException {
         super.doInit();
-        executor = Executors.newSingleThreadExecutor();
 
         // Generate identifiers
         generateUniqueID(UID_PREFIX, config.serialNumber);
@@ -137,7 +135,7 @@ public class DataFeedDriver extends AbstractSensorModule<DataFeedConfig> {
             return;
         }
 
-        dataStreamProcessor = dataParser instanceof IStreamProcessor processor ? processor : new LineBasedStreamProcessor(executor, dataParser);
+        dataStreamProcessor = dataParser instanceof IStreamProcessor processor ? processor : new LineBasedStreamProcessor(dataParser);
 
         try {
             dataStreamProcessor.processStream(streamProvider.getInputStream(), dataBlock -> output.setData(dataBlock));

@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -20,14 +21,13 @@ import java.util.function.Consumer;
 public class LineBasedStreamProcessor implements IStreamProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(LineBasedStreamProcessor.class);
-    private final ExecutorService executor;
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final IDataParser parser;
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
     private volatile Future<?> task;
     private final Object taskLock = new Object();
 
-    public LineBasedStreamProcessor(ExecutorService executor, IDataParser parser) {
-        this.executor = Asserts.checkNotNull(executor, "executor");
+    public LineBasedStreamProcessor(IDataParser parser) {
         this.parser = Asserts.checkNotNull(parser, "parser");
     }
 

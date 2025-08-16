@@ -8,14 +8,14 @@ public class KafkaMessageQueueDescriptor extends JarModuleProvider implements IM
     @Override
     public String getModuleName()
     {
-        return "Kafka Comm Provider";
+        return "Kafka Message Queue";
     }
     
 
     @Override
     public String getModuleDescription()
     {
-        return "Kafka communication provider using Apache Kafka Client";
+        return "Kafka message queue implementation using Apache Kafka Client";
     }
     
 

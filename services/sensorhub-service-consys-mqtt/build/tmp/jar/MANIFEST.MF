@@ -5,7 +5,7 @@ Bundle-SymbolicName: org.sensorhub.sensorhub-service-consys-mqtt
 Bundle-Name: Connected Systems API MQTT Extension
 Bundle-Description: MQTT Extension for OGC API Connected Systems
 Bundle-Version: 0.0.0
-Bundle-BuildNumber: 88eb3b95
+Bundle-BuildNumber: ba1de70a
 Bundle-License: MPL 2.0 (http://mozilla.org/MPL/2.0)
 Bundle-Copyright: Copyright (c) Sensia Software LLC. All Rights Reserved
 

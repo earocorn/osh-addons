@@ -1,6 +1,5 @@
 package com.botts.impl.parser.protobuf;
 
-
 import com.botts.api.parser.DataParserConfig;
 import com.botts.api.parser.IDataParser;
 import org.sensorhub.api.config.DisplayInfo;

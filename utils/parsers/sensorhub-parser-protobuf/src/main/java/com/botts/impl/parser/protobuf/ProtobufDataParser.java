@@ -1,9 +1,12 @@
 package com.botts.impl.parser.protobuf;
 
-import com.botts.impl.parser.json.JSONDataParser;
-import com.botts.api.parser.data.DataField;
+
 import com.botts.api.parser.AbstractDataParser;
 import com.botts.api.parser.IStreamProcessor;
+import com.botts.api.parser.data.BaseDataType;
+import com.botts.api.parser.data.DataFeedUtils;
+import com.botts.api.parser.data.DataField;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.protobuf.*;
@@ -14,11 +17,15 @@ import org.sensorhub.api.common.SensorHubException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vast.util.Asserts;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+
+import java.io.*;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 public class ProtobufDataParser extends AbstractDataParser implements IStreamProcessor {
@@ -27,6 +34,10 @@ public class ProtobufDataParser extends AbstractDataParser implements IStreamPro
     private final ProtobufDataParserConfig config;
     private final Map<String, Descriptors.Descriptor> descriptorMap = new HashMap<>();
     private final Descriptors.Descriptor defaultDescriptor;
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final Object taskLock = new Object();
+    private volatile Future<?> task;
+    private final AtomicBoolean isRunning = new AtomicBoolean(false);
 
     public ProtobufDataParser(ProtobufDataParserConfig config, DataComponent outputStructure) {
         super(config, outputStructure);
@@ -42,6 +53,23 @@ public class ProtobufDataParser extends AbstractDataParser implements IStreamPro
         this.defaultDescriptor = descriptorMap.get(config.defaultMessageType);
         if (this.defaultDescriptor == null)
             throw new IllegalArgumentException("No default message type found. Config value: " + config.defaultMessageType);
+    }
+
+    public void loadDescriptors(String filepath) throws IOException, Descriptors.DescriptorValidationException {
+        DescriptorProtos.FileDescriptorSet set = DescriptorProtos.FileDescriptorSet.parseFrom(new FileInputStream(filepath));
+        Map<String, Descriptors.FileDescriptor> fileDescriptorMap = new HashMap<>();
+
+        for (DescriptorProtos.FileDescriptorProto proto : set.getFileList()) {
+            Descriptors.FileDescriptor[] deps = new Descriptors.FileDescriptor[proto.getDependencyCount()];
+            for (int i = 0; i < proto.getDependencyCount(); i++)
+                deps[i] = fileDescriptorMap.get(proto.getDependency(i));
+
+            Descriptors.FileDescriptor fileDescriptor = Descriptors.FileDescriptor.buildFrom(proto, deps);
+            fileDescriptorMap.put(fileDescriptor.getName(), fileDescriptor);
+
+            for (Descriptors.Descriptor messageType : fileDescriptor.getMessageTypes())
+                descriptorMap.put(messageType.getFullName(), messageType);
+        }
     }
 
     public DynamicMessage generateTestMessage() {
@@ -65,28 +93,35 @@ public class ProtobufDataParser extends AbstractDataParser implements IStreamPro
                 .build();
     }
 
-    public void loadDescriptors(String filepath) throws IOException, Descriptors.DescriptorValidationException {
-        DescriptorProtos.FileDescriptorSet set = DescriptorProtos.FileDescriptorSet.parseFrom(new FileInputStream(filepath));
-        Map<String, Descriptors.FileDescriptor> fileDescriptorMap = new HashMap<>();
+    public static Object findInJsonObject(JsonObject root, String fieldPath, BaseDataType dataType) {
+        String[] parts = fieldPath.split("\\.");
 
-        for (DescriptorProtos.FileDescriptorProto proto : set.getFileList()) {
-            Descriptors.FileDescriptor[] deps = new Descriptors.FileDescriptor[proto.getDependencyCount()];
-            for (int i = 0; i < proto.getDependencyCount(); i++)
-                deps[i] = fileDescriptorMap.get(proto.getDependency(i));
+        if (parts.length <= 2)
+            return null;
 
-            Descriptors.FileDescriptor fileDescriptor = Descriptors.FileDescriptor.buildFrom(proto, deps);
-            fileDescriptorMap.put(fileDescriptor.getName(), fileDescriptor);
+        JsonElement current = root;
 
-            for (Descriptors.Descriptor messageType : fileDescriptor.getMessageTypes())
-                descriptorMap.put(messageType.getFullName(), messageType);
+        for (int i = 2; i < parts.length; i++) {
+            String part = parts[i];
+            if (current != null && current.isJsonObject()) {
+                JsonObject obj = current.getAsJsonObject();
+                if (!obj.has(part))
+                    return null;
+                current = obj.get(part);
+            } else
+                return null;
         }
+
+        if (current != null && current.isJsonPrimitive())
+            return DataFeedUtils.parseValue(current.getAsString(), dataType);
+
+        return null;
     }
 
     @Override
     public DataBlock parse(byte[] data) {
-        DataBlock dataBlock = getRecordStructure().createDataBlock();
-
         try {
+            DataBlock dataBlock = getRecordStructure().createDataBlock();
             DynamicMessage message = DynamicMessage.parseFrom(defaultDescriptor, data);
             String jsonString = JsonFormat.printer().includingDefaultValueFields().print(message);
             JsonObject object = JsonParser.parseString(jsonString).getAsJsonObject();
@@ -94,16 +129,15 @@ public class ProtobufDataParser extends AbstractDataParser implements IStreamPro
             if (object == null)
                 return dataBlock;
 
-            Map<String, Object> dataMap = new HashMap<>();
 
             for (DataField field : getInputFields()) {
-                Object realValue = JSONDataParser.findInJsonObject(object, field.name, field.dataType);
+                Object realValue = findInJsonObject(object, field.name, field.dataType);
                 if (realValue == null) {
                     logger.warn("Field {} has no data", field.name);
                     continue;
                 }
 
-                dataMap.put(field.name, realValue);
+                DataFeedUtils.setFieldData(getRecordStructure().getComponentIndex(field.name), realValue, dataBlock);
             }
 
             return dataBlock;
@@ -114,7 +148,33 @@ public class ProtobufDataParser extends AbstractDataParser implements IStreamPro
 
     @Override
     public void processStream(InputStream inputStream, Consumer<DataBlock> consumer) {
-        // TODO: Allow processing of protobuf stream
+        Asserts.checkNotNull(inputStream, "inputStream");
+        Asserts.checkNotNull(consumer, "consumer");
+
+        if (isRunning.compareAndSet(false, true)) {
+            logger.warn("Stream is already running");
+            return;
+        }
+
+        logger.debug("Starting stream processing");
+        synchronized (taskLock) {
+            task = executor.submit(() -> {
+                try {
+                    CodedInputStream protobufStream = CodedInputStream.newInstance(inputStream);
+
+                    while (isRunning.get() && (!protobufStream.isAtEnd())) {
+                        int size = protobufStream.readRawVarint32();
+                        int oldLimit = protobufStream.pushLimit(size);
+                        byte[] messageBytes = protobufStream.readRawBytes(size);
+                        protobufStream.popLimit(oldLimit);
+                        DataBlock dataBlock = parse(messageBytes);
+                        consumer.accept(dataBlock);
+                    }
+                } catch (IOException e) {
+                    logger.error("Stream processing error", e);
+                }
+            });
+        }
     }
 
     @Override
@@ -124,7 +184,18 @@ public class ProtobufDataParser extends AbstractDataParser implements IStreamPro
 
     @Override
     public void stop() {
-        // TODO: Stop protobuf stream processing
+        logger.debug("Stopping stream processor");
+
+        isRunning.set(false);
+
+        synchronized (taskLock) {
+            if (task != null) {
+                task.cancel(true);
+                task = null;
+            }
+        }
+
+        logger.debug("Stream processor stopped");
     }
 
 }

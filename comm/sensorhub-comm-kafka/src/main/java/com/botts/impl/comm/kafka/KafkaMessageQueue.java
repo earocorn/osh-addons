@@ -24,7 +24,8 @@ public class KafkaMessageQueue extends AbstractSubModule<KafkaMessageQueueConfig
     private KafkaProducer<byte[], byte[]> producer;
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
     private Thread consumerThread;
-    private final static String SECURITY_PROTOCOL_CONFIG = "security.protocol";
+    private static final String SECURITY_PROTOCOL_CONFIG = "security.protocol";
+    private static final String SASL_SSL = "SASL_SSL";
 
     @Override
     public void init(KafkaMessageQueueConfig config) throws SensorHubException {
@@ -81,7 +82,7 @@ public class KafkaMessageQueue extends AbstractSubModule<KafkaMessageQueueConfig
     private void configureSaslScramProps(Properties props, boolean useSHA256) {
         String jaasConfigString = "org.apache.kafka.common.security.scram.ScramLoginModule required username=\""
                 + escape(config.username) + "\" password=\"" + escape(config.password) + "\";";
-        props.setProperty(SECURITY_PROTOCOL_CONFIG, "SASL_SSL");
+        props.setProperty(SECURITY_PROTOCOL_CONFIG, SASL_SSL);
         props.setProperty(SaslConfigs.SASL_JAAS_CONFIG, jaasConfigString);
         if (useSHA256)
             props.setProperty(SaslConfigs.SASL_MECHANISM, "SCRAM-SHA-256");
@@ -91,7 +92,7 @@ public class KafkaMessageQueue extends AbstractSubModule<KafkaMessageQueueConfig
 
     private void configureKerberosProps(Properties props) {
         if (config.kerberosConfig != null) {
-            props.setProperty(SECURITY_PROTOCOL_CONFIG, "SASL_SSL");
+            props.setProperty(SECURITY_PROTOCOL_CONFIG, SASL_SSL);
             props.setProperty(SaslConfigs.SASL_KERBEROS_SERVICE_NAME, config.kerberosConfig.serviceName);
             props.setProperty(SaslConfigs.SASL_MECHANISM, "GSSAPI");
             String escapedConfig = escape(config.kerberosConfig.keyTabLocation);
@@ -107,7 +108,7 @@ public class KafkaMessageQueue extends AbstractSubModule<KafkaMessageQueueConfig
         String jaasConfig = "org.apache.kafka.common.security.plain.PlainLoginModule required username=\""
                 + escape(config.username) + "\" password=\"" + escape(config.password) + "\";";
         props.setProperty(SaslConfigs.SASL_MECHANISM, "PLAIN");
-        props.setProperty(SECURITY_PROTOCOL_CONFIG, "SASL_SSL");
+        props.setProperty(SECURITY_PROTOCOL_CONFIG, SASL_SSL);
         props.setProperty(SaslConfigs.SASL_JAAS_CONFIG, jaasConfig);
     }
 
@@ -137,14 +138,12 @@ public class KafkaMessageQueue extends AbstractSubModule<KafkaMessageQueueConfig
         try {
             while (isRunning.get()) {
                 ConsumerRecords<byte[], byte[]> records = consumer.poll(Duration.ofMillis(config.pollTimeout));
-                for (ConsumerRecord<byte[], byte[]> record : records)
+                for (ConsumerRecord<byte[], byte[]> consumerRecord : records)
                     for (MessageListener listener : listeners) {
                         HashMap<String, String> attributes = new HashMap<>();
-                        attributes.put("key", Arrays.toString(record.key()));
-                        record.headers().forEach(header -> {
-                            attributes.put(header.key(), Arrays.toString(header.value()));
-                        });
-                        listener.receive(attributes, record.value());
+                        attributes.put("key", Arrays.toString(consumerRecord.key()));
+                        consumerRecord.headers().forEach(header -> attributes.put(header.key(), Arrays.toString(header.value())));
+                        listener.receive(attributes, consumerRecord.value());
                     }
             }
         } catch (Exception e) {
@@ -174,12 +173,12 @@ public class KafkaMessageQueue extends AbstractSubModule<KafkaMessageQueueConfig
         if (!config.enablePublish)
             return;
 
-        final ProducerRecord<byte[], byte[]> record = attrs.get("key") == null ?
+        final ProducerRecord<byte[], byte[]> producerRecord = attrs.get("key") == null ?
                         new ProducerRecord<>(config.topicName, payload) :
                         new ProducerRecord<>(config.topicName, attrs.get("key").getBytes(), payload);
-        producer.send(record, (metadata, exception) -> {
+        producer.send(producerRecord, (metadata, exception) -> {
             if (exception != null)
-                getLogger().error("Error occurred while sending record", exception);
+                getLogger().error("Error occurred while sending producerRecord", exception);
         });
     }
 

@@ -1,0 +1,35 @@
+plugins {
+  id "io.spring.dependency-management" version "1.0.7.RELEASE"
+}
+description = 'MongoDB System Database'
+ext.details = 'Observation system database backed by MongoDB'
+version = '1.0.0'
+
+dependencies {
+  implementation 'org.sensorhub:sensorhub-core:' + oshCoreVersion
+  implementation platform("org.mongodb:mongodb-driver-bom:5.5.1")
+  implementation platform('io.projectreactor:reactor-bom:2024.0.6')
+  implementation 'io.projectreactor:reactor-core'
+  implementation 'org.mongodb:mongodb-driver-reactivestreams'
+}
+  
+// add info to OSGi manifest
+osgi {
+  manifest {
+    attributes('Bundle-Vendor': 'Sensia Software LLC')
+    attributes('Bundle-Activator': 'org.sensorhub.process.math.Activator')
+  }
+}
+
+// add info to maven pom
+ext.pom >>= {
+  developers {
+    developer {
+      id 'earocorn'
+      name 'Alex Almanza'
+      organization ''
+      organizationUrl 'https://www.alexalmanza.com'
+    }
+  }
+}
+

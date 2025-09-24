@@ -50,8 +50,8 @@ public class QueryBuilderSystemDescStore extends QueryBuilderBaseFeatureStore<IS
     @Override
     public String selectLastVersionByUidQuery(String uid, String timestamp) {
         return "SELECT DISTINCT ON (id) id,validTime " +
-                "FROM " + this.getStoreTableName() + " WHERE (data->>'uid') = '" + uid + "' AND " +
-                this.getStoreTableName()+".validTime @> '" + timestamp + "'::timestamp "+
+                "FROM " + this.getStoreTableName() + " WHERE (data->>'uniqueId') = '" + uid + "' AND " +
+                this.getStoreTableName()+".validTime @> ? " +
                 "order by id, lower(validTime) DESC";
     }
 
@@ -61,6 +61,15 @@ public class QueryBuilderSystemDescStore extends QueryBuilderBaseFeatureStore<IS
                     "((data->>'uniqueId'), "+VALID_TIME+")";
         }
 
+    @Override
+        public String createValidTimeBeginIndexQuery() {
+            return "CREATE INDEX "+this.getStoreTableName()+"_feature_valid_time_0_idx ON "+this.getStoreTableName()+ " (validTime)";
+        }
+
+    @Override
+        public String createValidTimeEndIndexQuery() {
+            return "CREATE INDEX "+this.getStoreTableName()+"_feature_valid_time_1_idx ON "+this.getStoreTableName()+ " (validTime)";
+        }
     @Override
         public String createTrigramDescriptionFullTextIndexQuery() {
             return "CREATE INDEX "+this.getStoreTableName()+"_feature_desc_full_text_datastream_idx ON  "+this.getStoreTableName()+" USING GIN ((data->>'description') gin_trgm_ops)";

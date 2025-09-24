@@ -50,14 +50,12 @@ public class PostgisSystemDescStoreImpl extends
     protected IProcedureStore procedureStore;
     protected IDeploymentStore deploymentStore;
 
-    public PostgisSystemDescStoreImpl(String url, String dbName, String login, String password,
-                                      int idScope, IdProviderType dsIdProviderType, boolean useBatch) {
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderSystemDescStore(), useBatch);
+    public PostgisSystemDescStoreImpl(String url, String dbName, String login, String password, int idScope, IdProviderType dsIdProviderType) {
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderSystemDescStore(), false);
     }
 
-    public PostgisSystemDescStoreImpl(String url, String dbName, String login, String password, String dataStoreName,
-                                      int idScope, IdProviderType dsIdProviderType, boolean useBatch){
-        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderSystemDescStore(dataStoreName), useBatch);
+    public PostgisSystemDescStoreImpl(String url, String dbName, String login, String password, String dataStoreName, int idScope, IdProviderType dsIdProviderType){
+        super(url,dbName, login, password, idScope, dsIdProviderType, new QueryBuilderSystemDescStore(dataStoreName), false);
     }
 
     @Override
@@ -72,10 +70,40 @@ public class PostgisSystemDescStoreImpl extends
     protected String writeFeature(ISystemWithDesc feature) throws IOException {
         try {
             var sml = feature.getFullDescription();
-            if (sml == null) {
-                sml = new SMLConverter().genericFeatureToSystem(feature);
+            if (sml == null && feature instanceof ISystemWithDesc) {
+//                sml = new SMLConverter().genericFeatureToSystem(feature);
+                SMLBuilders.AbstractProcessBuilder<?,?> builder = null;
+                builder = new SMLConverter().createPhysicalSystem()
+                        .uniqueID(feature.getUniqueIdentifier())
+                        .name(feature.getName())
+                        .description(feature.getDescription())
+                        .definition(feature.getType());
+
+                var validTime = feature.getValidTime();
+                if (feature.getValidTime() != null) {
+                    builder.validTimePeriod(
+                            validTime.begin().atOffset(ZoneOffset.UTC),
+                            validTime.end().atOffset(ZoneOffset.UTC));
+                }
+
+                if (feature.getGeometry() != null) {
+                    if (feature.getGeometry() instanceof Point) {
+                        ((SMLBuilders.PhysicalSystemBuilder) builder).location((Point) feature.getGeometry());
+                    } else {
+                        throw new IllegalStateException("Unsupported System geometry: " + feature.getGeometry());
+                    }
+                }
+
+                var systemKindLink = (IXlinkReference<?>)feature.getProperties().get(new QName("systemKind"));
+                if (systemKindLink != null) {
+                    var href = systemKindLink.getHref().replace("f=json", "f=sml");
+                    var title = systemKindLink.getTitle();
+                    builder.typeOf(href, title);
+                }
+                sml = builder.build();
             }
-            sml = ProcessWrapper.getWrapper(sml).withId(feature.getId());
+
+            sml = ProcessWrapper.getWrapper((AbstractProcess)sml).withId(feature.getId());
             StringWriter stringWriter = new StringWriter();
             JsonWriter jsonWriter = new JsonWriter(stringWriter);
             smlJsonBindings.writeDescribedObject(jsonWriter, sml);

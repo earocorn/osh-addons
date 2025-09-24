@@ -51,7 +51,7 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
 //        return "INSERT INTO "+this.getStoreTableName()+" (id, parentId,"+GEOMETRY+", "+VALID_TIME+", data) " +
 //                "SELECT ?,?,?,?,? WHERE (EXISTS(SELECT 1 from "+this.getStoreTableName()+" where id = ?)) ";
         return "INSERT INTO "+this.getStoreTableName()+" (id, parentId,"+GEOMETRY+", "+VALID_TIME+", data) " +
-                "SELECT ?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM "+this.getStoreTableName()+" WHERE (data->>'uniqueId')::text = ?)";
+                "VALUES(?,?,?,?,?)";
     }
 
     public String selectByPrimaryKeyQuery() {
@@ -102,6 +102,7 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
         return "SELECT COUNT(DISTINCT data->'properties'->>'uid') AS recordsCount FROM " + this.getStoreTableName();
     }
 
+
     public String removeByPrimaryKeyQuery() {
         return "DELETE FROM "+this.getStoreTableName()+" WHERE id = ? AND "+this.getStoreTableName()+".validTime @> ?";
     }
@@ -110,8 +111,12 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
         return "CREATE UNIQUE INDEX "+this.getStoreTableName()+"_feature_uid_idx ON "+this.getStoreTableName()+" " +
                 "((data->'properties'->>'uid'), "+VALID_TIME+")";
     }
-    public String createValidTimeIndexQuery() {
-        return "CREATE INDEX "+this.getStoreTableName()+"_feature_valid_time_0_idx ON "+this.getStoreTableName()+ " using GIST (validTime)";
+    public String createValidTimeBeginIndexQuery() {
+        return "CREATE INDEX "+this.getStoreTableName()+"_feature_valid_time_0_idx ON "+this.getStoreTableName()+ " (validTime)";
+    }
+
+    public String createValidTimeEndIndexQuery() {
+        return "CREATE INDEX "+this.getStoreTableName()+"_feature_valid_time_1_idx ON "+this.getStoreTableName()+ " (validTime)";
     }
 
     public String createTrigramExtensionQuery() {

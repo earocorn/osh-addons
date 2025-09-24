@@ -80,12 +80,22 @@ public class PostgisUtils {
     static final Lock reentrantLock = new ReentrantLock();
 
     // is thread-safe
-    public static HikariDataSource getHikariDataSourceInstance(String url, String dbName, String login, String password, boolean autoCommit) {
+    public static HikariDataSource getHikariDataSourceInstance(String url, String dbName, String login, String password) {
         if(hikariDataSourceInstance == null) {
             reentrantLock.lock();
             try {
                 if(hikariDataSourceInstance == null) {
-                    hikariDataSourceInstance = createHikariDataSource(url, dbName, login,password,autoCommit);
+                        HikariConfig config = new HikariConfig();
+                        config.setJdbcUrl("jdbc:postgresql://" + url + "/" + dbName+"");
+                        config.setUsername(login);
+                        config.setPassword(password);
+                        config.setKeepaliveTime(30000*5);
+//                        config.setMaximumPoolSize(200_000);
+                        config.addDataSourceProperty("cachePrepStmts", "true");
+                        config.addDataSourceProperty("prepStmtCacheSize", "250");
+                        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+                        config.setAutoCommit(true);
+                        hikariDataSourceInstance = new HikariDataSource(config);
                 }
             } finally {
                 reentrantLock.unlock();
@@ -93,30 +103,13 @@ public class PostgisUtils {
         }
         return hikariDataSourceInstance;
     }
-    public static HikariDataSource createHikariDataSource(String url, String dbName, String login, String password, boolean autoCommit) {
-        HikariConfig config = new HikariConfig();
-        config.setJdbcUrl("jdbc:postgresql://" + url + "/" + dbName+"");
-        config.setUsername(login);
-        config.setPassword(password);
-        config.setKeepaliveTime(30000*5);
-        config.setConnectionTimeout(30000);
-        config.setMaxLifetime(1800000);
-        config.setValidationTimeout(5000);
-//                        config.setMaximumPoolSize(200_000);
-        config.addDataSourceProperty("cachePrepStmts", "true");
-        config.addDataSourceProperty("prepStmtCacheSize", "250");
-        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-        config.setAutoCommit(autoCommit);
-        return new HikariDataSource(config);
-    }
-
     public static Connection getConnection(String url, String dbName, String login, String password) {
         try {
             String urlPostgres = "jdbc:postgresql://" + url + "/" + dbName;
             Properties props = new Properties();
             props.setProperty("user", login);
             props.setProperty("password", password);
-//            props.setProperty("reWriteBatchedInserts", "false");
+            props.setProperty("reWriteBatchedInserts", "true");
             props.setProperty("tcpKeepAlive","true");
             Connection connection =  DriverManager.getConnection(urlPostgres, props);
             connection.setAutoCommit(false);
@@ -170,7 +163,7 @@ public class PostgisUtils {
         return JTSUtils.getAsJTSGeometry(abstractGeometry);
     }
 
-    public static Instant readInstantFromString(String time, boolean truncated) {
+    public static Instant readInstantFromString(String time) {
         if(time == null || time.isEmpty()) {
             throw new RuntimeException("Cannot Parse time "+time);
         }
@@ -179,25 +172,17 @@ public class PostgisUtils {
         } else if(time.equalsIgnoreCase("infinity")) {
             return Instant.MAX;
         } else {
-            if(truncated) {
-                return Instant.parse(time).truncatedTo(ChronoUnit.SECONDS);
-            } else {
-                return Instant.parse(time);
-            }
+            return Instant.parse(time).truncatedTo(ChronoUnit.SECONDS);
         }
     }
 
-    public static String writeInstantToString(Instant instant, boolean truncated) {
+    public static String writeInstantToString(Instant instant) {
         if(instant.getEpochSecond() < MIN_INSTANT.getEpochSecond()) {
             return "-infinity";
         } else if(instant.getEpochSecond() > MAX_INSTANT.getEpochSecond()) {
             return "infinity";
         } else {
-            if(truncated) {
-                return instant.truncatedTo(ChronoUnit.SECONDS).toString();
-            } else {
-                return instant.toString();
-            }
+            return instant.truncatedTo(ChronoUnit.SECONDS).toString();
         }
     }
 

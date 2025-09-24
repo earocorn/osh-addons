@@ -28,7 +28,6 @@ import org.sensorhub.api.datastore.feature.IFeatureStoreBase;
 import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.PostgisStore;
-import org.sensorhub.impl.datastore.postgis.ThreadSafeBatchExecutor;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderBaseFeatureStore;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderFeatureStore;
 import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
@@ -37,7 +36,6 @@ import org.slf4j.LoggerFactory;
 import org.vast.ogc.gml.IFeature;
 import org.vast.sensorML.SMLJsonBindings;
 import org.vast.util.Bbox;
-import org.vast.util.TimeExtent;
 
 import java.io.IOException;
 import java.sql.*;
@@ -59,9 +57,16 @@ public abstract class PostgisBaseFeatureStoreImpl
         implements IFeatureStoreBase<V, VF, F> {
 
     private static final Logger logger = LoggerFactory.getLogger(PostgisBaseFeatureStoreImpl.class);
+
     protected final Lock lock = new ReentrantLock();
+
     public ThreadLocal<WKBWriter> threadLocalWriter = ThreadLocal.withInitial(WKBWriter::new);
-    public static final int BATCH_SIZE = 100;
+
+    public ThreadLocal<PreparedStatement> batchPreparedStatement;
+
+    protected static final int MAX_BATCH_SIZE = 10000;
+
+    protected int currentBatchSize = 0;
 
     protected volatile Cache<FeatureKey, V> cache = CacheBuilder.newBuilder()
             .maximumSize(150_000)
@@ -70,14 +75,15 @@ public abstract class PostgisBaseFeatureStoreImpl
             .build();
 
     protected SMLJsonBindings smlJsonBindings = new SMLJsonBindings(false);
+    protected boolean useBatch;
 
     protected PostgisBaseFeatureStoreImpl(String url, String dbName, String login, String password, int idScope,
-                                          IdProviderType dsIdProviderType, T queryBuilder, boolean useBatch) {
-        super(idScope, dsIdProviderType, queryBuilder, useBatch);
+                                          IdProviderType dsIdProviderType, T queryBuilder, boolean useBatch){
+        super(idScope,dsIdProviderType,queryBuilder);
+        this.useBatch = useBatch;
         this.init(url, dbName, login, password, new String[]{
                 queryBuilder.createTableQuery(),
                 queryBuilder.createUidUniqueIndexQuery(),
-                queryBuilder.createValidTimeIndexQuery(),
                 queryBuilder.createTrigramExtensionQuery(),
                 queryBuilder.createTrigramDescriptionFullTextIndexQuery(),
                 queryBuilder.createTrigramUidFullTextIndexQuery()
@@ -87,10 +93,17 @@ public abstract class PostgisBaseFeatureStoreImpl
     @Override
     protected void init(String url, String dbName, String login, String password, String[] initScripts) {
         super.init(url, dbName, login, password, initScripts);
-        if (useBatch) {
-            this.setBatchSize(BATCH_SIZE);
-            this.threadSafeBatchExecutor = new ThreadSafeBatchExecutor(
-                    url, dbName, login, password, queryBuilder.addOrUpdateByIdQuery());
+        if(useBatch) {
+            batchPreparedStatement = ThreadLocal.withInitial(() -> {
+                try {
+                    PreparedStatement pstmt = batchConnection.prepareStatement(queryBuilder.addOrUpdateByIdQuery());
+                    org.postgresql.PGStatement pgstmt = pstmt.unwrap(org.postgresql.PGStatement.class);
+                    pgstmt.setPrepareThreshold(1);
+                    return pstmt;
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            });
         }
     }
 
@@ -111,22 +124,16 @@ public abstract class PostgisBaseFeatureStoreImpl
 
     public FeatureKey addOrUpdate(FeatureKey featureKey, BigId parentID, V value) throws DataStoreException {
         DataStoreUtils.checkFeatureObject(value);
-        if (useBatch) {
+        if(useBatch) {
             try {
-                Connection connection = threadSafeBatchExecutor.getConnection();
-                try (PreparedStatement preparedStatement = connection.prepareStatement(queryBuilder.addOrUpdateByIdQuery())) {
-                    fillAddOrUpdateStatement(featureKey, parentID, value, preparedStatement);
-                    int rows = preparedStatement.executeUpdate();
-                    cache.invalidate(featureKey);
-                } catch (Exception e) {
-                    throw new DataStoreException("Cannot insert feature " + value.getName());
-                } finally {
-                    threadSafeBatchExecutor.offer(connection);
-                    if (currentBatchSize.getAndIncrement() >= this.getBatchSize()) {
-                        this.commit();
-                    }
+                PreparedStatement preparedStatement = batchPreparedStatement.get();
+                fillAddOrUpdateStatement(featureKey, parentID, value, preparedStatement);
+                preparedStatement.addBatch();
+                cache.invalidate(featureKey);
+                if (currentBatchSize++ >= MAX_BATCH_SIZE) {
+                    this.commit();
                 }
-            } catch (Exception e) {
+            } catch (SQLException | IOException e) {
                 throw new DataStoreException("Cannot insert feature " + value.getName());
             }
         } else {
@@ -143,10 +150,43 @@ public abstract class PostgisBaseFeatureStoreImpl
         return featureKey;
     }
 
-    private void fillAddOrUpdateStatement(FeatureKey featureKey, BigId parentID, V value, PreparedStatement preparedStatement) throws SQLException, IOException {
+    private void fillAddOrUpdateStatement(FeatureKey featureKey, BigId parentID, V value,PreparedStatement preparedStatement) throws SQLException, IOException {
         preparedStatement.setLong(1, featureKey.getInternalID().getIdAsLong());
-        preparedStatement.setString(6, value.getUniqueIdentifier());
         // statements for INSERT - parentId
+       /* if (parentID != null && parentID != BigId.NONE) {
+            preparedStatement.setLong(2, parentID.getIdAsLong());
+            preparedStatement.setLong(6, parentID.getIdAsLong());
+            preparedStatement.setLong(7, parentID.getIdAsLong());
+        } else {
+            preparedStatement.setLong(2, 0);
+            preparedStatement.setLong(6, 0);
+            preparedStatement.setLong(7, 0);
+        }
+
+        if (value.getGeometry() != null) {
+            Geometry geometry = PostgisUtils.toJTSGeometry(value.getGeometry());
+            byte[] geom = threadLocalWriter.get().write(geometry);
+            preparedStatement.setBytes(3, geom); // insert
+            preparedStatement.setBytes(8, geom); // update
+        } else {
+            preparedStatement.setNull(3, Types.LONGVARBINARY);
+            preparedStatement.setNull(8, Types.LONGVARBINARY);
+        }
+        if (featureKey.getValidStartTime() != null && featureKey.getValidStartTime().getEpochSecond() > MIN_INSTANT.getEpochSecond()) {
+            preparedStatement.setString(4, featureKey.getValidStartTime().toString());
+            preparedStatement.setString(9, featureKey.getValidStartTime().toString());
+        } else {
+            preparedStatement.setString(4, "-infinity");
+            preparedStatement.setString(9, "-infinity");
+        }
+
+        PGobject jsonObject = new PGobject();
+        jsonObject.setType("json");
+        jsonObject.setValue(this.writeFeature(value));
+
+        preparedStatement.setObject(5, jsonObject);
+        preparedStatement.setObject(10, jsonObject);
+        */
         if (parentID != null && parentID != BigId.NONE) {
             preparedStatement.setLong(2, parentID.getIdAsLong());
         } else {
@@ -156,27 +196,28 @@ public abstract class PostgisBaseFeatureStoreImpl
             Geometry geometry = PostgisUtils.toJTSGeometry(value.getGeometry());
             byte[] geom = threadLocalWriter.get().write(geometry);
             preparedStatement.setBytes(3, geom); // insert
-            preparedStatement.setBytes(7, geom); // update
+            preparedStatement.setBytes(6, geom); // update
         } else {
             preparedStatement.setNull(3, Types.LONGVARBINARY);
-            preparedStatement.setNull(7, Types.LONGVARBINARY);
+            preparedStatement.setNull(6, Types.LONGVARBINARY);
         }
 
         PGobject pgValidTimeRange = this.createPGobjectValidTimeRange(featureKey, value);
         preparedStatement.setObject(4, pgValidTimeRange);
-        preparedStatement.setObject(8, pgValidTimeRange);
+        preparedStatement.setObject(7, pgValidTimeRange);
 
         PGobject jsonObject = new PGobject();
         jsonObject.setType("json");
         jsonObject.setValue(this.writeFeature(value));
 
         preparedStatement.setObject(5, jsonObject);
-        preparedStatement.setObject(9, jsonObject);
+        preparedStatement.setObject(8, jsonObject);
     }
 
     public Stream<Entry<FeatureKey, V>> selectEntries(F filter, Set<VF> fields) {
         String queryStr = queryBuilder.createSelectEntriesQuery(filter, fields);
         logger.debug(queryStr);
+        System.out.println(queryStr);
         List<Entry<FeatureKey, V>> results = new ArrayList<>();
         try (Connection connection = this.hikariDataSource.getConnection()) {
             try (Statement statement = connection.createStatement()) {
@@ -200,30 +241,19 @@ public abstract class PostgisBaseFeatureStoreImpl
     }
 
     protected abstract V readFeature(String data) throws IOException;
-
     protected abstract String writeFeature(V feature) throws IOException;
 
     protected PGobject createPGobjectValidTimeRange(FeatureKey featureKey, V value) throws SQLException {
         PGobject range = new PGobject();
         range.setType("tsrange");  // type PostgreSQL
-        String startRangeValue;
-        String endRangeValue;
-
-        TimeExtent timeExtent = value.getValidTime();
-        if (timeExtent == null) {
-            startRangeValue = "-infinity";
-            endRangeValue = "infinity";
-        } else if (timeExtent.beginsNow()) {
-            startRangeValue = "-infinity";
-            endRangeValue = PostgisUtils.writeInstantToString(timeExtent.end().truncatedTo(ChronoUnit.SECONDS), false);
-        } else if (timeExtent.endsNow()) {
-            endRangeValue = "infinity";
-            startRangeValue = PostgisUtils.writeInstantToString(timeExtent.begin().truncatedTo(ChronoUnit.SECONDS), false);
+        String rangeValue;
+        if (featureKey.getValidStartTime() != null && featureKey.getValidStartTime().getEpochSecond() > MIN_INSTANT.getEpochSecond()) {
+            rangeValue ="["+PostgisUtils.checkAndGetValidInstant(value.getValidTime().begin())+","+
+                    PostgisUtils.checkAndGetValidInstant(value.getValidTime().end())+"]";
         } else {
-            startRangeValue = PostgisUtils.writeInstantToString(timeExtent.begin().truncatedTo(ChronoUnit.SECONDS), false);
-            endRangeValue = PostgisUtils.writeInstantToString(timeExtent.end().truncatedTo(ChronoUnit.SECONDS), false);
+            rangeValue ="[-infinity,infinity]";
         }
-        range.setValue("[" + startRangeValue + "," + endRangeValue + "]");
+        range.setValue(rangeValue);
         return range;
     }
 
@@ -232,10 +262,10 @@ public abstract class PostgisBaseFeatureStoreImpl
         range.setType("tsrange");  // type PostgreSQL
         String rangeValue;
         if (key.getValidStartTime() != null && key.getValidStartTime().getEpochSecond() > MIN_INSTANT.getEpochSecond()) {
-            String pgValidTime = PostgisUtils.writeInstantToString(key.getValidStartTime().truncatedTo(ChronoUnit.SECONDS), false);
-            rangeValue = "[" + pgValidTime + "," + pgValidTime + "]";
+            rangeValue ="["+PostgisUtils.checkAndGetValidInstant(key.getValidStartTime())+","+
+                    PostgisUtils.checkAndGetValidInstant(key.getValidStartTime())+"]";
         } else {
-            rangeValue = "[-infinity,infinity]";
+            rangeValue ="[-infinity,infinity]";
         }
 
         range.setValue(rangeValue);
@@ -505,5 +535,47 @@ public abstract class PostgisBaseFeatureStoreImpl
 
     public void clearCache() {
         cache.invalidateAll();
+    }
+
+    public void close() {
+        try {
+            if (batchPreparedStatement != null) {
+                batchPreparedStatement.get().close();
+            }
+            if(batchConnection != null && !batchConnection.isClosed()) {
+                batchConnection.close();
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+    @Override
+    public void commit() throws DataStoreException {
+        if (useBatch) {
+            try {
+                synchronized (batchPreparedStatement) {
+                    if (currentBatchSize > 0) {
+                        if (batchPreparedStatement != null) {
+                            int[] rows = batchPreparedStatement.get().executeBatch();
+//                        for(int i=0; i < rows.length; i++) {
+//                            if(rows[i] == 0) {
+//                                logger.error("Cannot commit");
+//                                throw new DataStoreException("Cannot execute batch");
+//                            }
+//                        }
+                        }
+                        currentBatchSize = 0;
+                    }
+                }
+            } catch (Exception ex) {
+                //
+                try {
+                    batchConnection.rollback();
+                } finally {
+                    logger.error("Cannot commit", ex);
+                    throw new DataStoreException("Cannot execute batch");
+                }
+            }
+        }
     }
 }

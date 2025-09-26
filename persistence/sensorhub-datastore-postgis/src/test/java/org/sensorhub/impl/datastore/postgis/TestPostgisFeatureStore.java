@@ -27,15 +27,19 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestPostgisFeatureStore extends AbstractTestFeatureStore<PostgisFeatureStoreImpl> {
-    protected static String FEATURE_DATASTORE_NAME = "test_features";
     private static String DB_NAME = "gis";
+
     private final String url = "localhost:5432";
     private final String login = "postgres";
+
     private final String password = "postgres";
-    private static final boolean USE_BATCH = true;
+
+    protected PostgisFeatureStoreImpl postgisFeatureStore;
+    protected static String FEATURE_DATASTORE_NAME = "test_features";
 
     protected PostgisFeatureStoreImpl initStore() throws Exception {
-        return new PostgisFeatureStoreImpl(url, DB_NAME, login, password, FEATURE_DATASTORE_NAME, DATABASE_NUM, IdProviderType.SEQUENTIAL, USE_BATCH);
+        postgisFeatureStore =  new PostgisFeatureStoreImpl(url, DB_NAME, login, password, FEATURE_DATASTORE_NAME, DATABASE_NUM, IdProviderType.SEQUENTIAL, true);
+        return postgisFeatureStore;
     }
 
 
@@ -49,17 +53,18 @@ public class TestPostgisFeatureStore extends AbstractTestFeatureStore<PostgisFea
     }
 
     protected void forceReadBackFromStorage() {
-        featureStore.clearCache();
+        postgisFeatureStore.clearCache();
     }
 
     @After
     public void cleanup() {
         try {
-            featureStore.drop();
+            postgisFeatureStore.close();
+            postgisFeatureStore.drop();
         } catch (Exception ex) {
             ex.printStackTrace();
         } finally {
-            featureStore.clearCache();
+            postgisFeatureStore.clearCache();
         }
     }
 

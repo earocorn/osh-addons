@@ -380,4 +380,47 @@ public class GeoTransforms
         latlon.y = Math.atan2(z, Math.sqrt(x*x + y*y)); // lat
         latlon.x = Math.atan2(y, x); // lon
     }
+
+    public void LLAtoENU(Vect3d refLla, Vect3d lla, Vect3d enuOut) {
+        Vect3d refEcef = new Vect3d();
+        Vect3d ecef = new Vect3d();
+        LLAtoECEF(refLla, refEcef);
+        LLAtoECEF(lla, ecef);
+
+        double lat0 = refLla.y;
+        double lon0 = refLla.x;
+
+        double sinLat = Math.sin(lat0);
+        double cosLat = Math.cos(lat0);
+        double sinLon = Math.sin(lon0);
+        double cosLon = Math.cos(lon0);
+
+        double dx = ecef.x - refEcef.x;
+        double dy = ecef.y - refEcef.y;
+        double dz = ecef.z - refEcef.z;
+
+        enuOut.x = -sinLon * dx + cosLon * dy;
+        enuOut.y = -sinLat * cosLon * dx - sinLat * sinLon * dy + cosLat * dz;
+        enuOut.z = cosLat * cosLon * dx + cosLat * sinLon * dy + sinLat * dz;
+    }
+
+    public void ENUtoLLA(Vect3d refLla, Vect3d enu, Vect3d llaOut) {
+        Vect3d refEcef = new Vect3d();
+        LLAtoECEF(refLla, refEcef);
+
+        double lat0 = refLla.y;
+        double lon0 = refLla.x;
+
+        double sinLat = Math.sin(lat0);
+        double cosLat = Math.cos(lat0);
+        double sinLon = Math.sin(lon0);
+        double cosLon = Math.cos(lon0);
+
+        double dx = -sinLon * enu.x - sinLat * cosLon * enu.y + cosLat * cosLon * enu.z;
+        double dy = cosLon * enu.x - sinLat * sinLon * enu.y + cosLat * sinLon * enu.z;
+        double dz = cosLat * enu.y + sinLat * enu.z;
+
+        Vect3d ecef = new Vect3d(refEcef.x + dx, refEcef.y + dy, refEcef.z + dz);
+        ECEFtoLLA(ecef, llaOut);
+    }
 }

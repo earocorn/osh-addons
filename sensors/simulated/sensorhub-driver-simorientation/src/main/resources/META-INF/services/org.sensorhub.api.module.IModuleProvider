@@ -1,0 +1,2 @@
+com.botts.impl.sensor.simorientation.SimOrientationDescriptor
+com.botts.impl.sensor.simorientation.FakeWeatherNetworkDescriptor

@@ -146,17 +146,15 @@ public class PostgisUtils {
     }
 
     public static String getOperator(TemporalFilter temporalFilter) {
-        return getOperator(temporalFilter.getOperator());
-    }
-
-    public static String getOperator(RangeFilter.RangeOp operator) {
-        String operatorString;
-        switch (operator) {
-            case CONTAINS ->  operatorString = "@>";
-            case EQUALS ->  operatorString = "=";
-            default ->  operatorString = "&&";
+        String operator = "&&";
+        if(temporalFilter.getOperator() == RangeFilter.RangeOp.CONTAINS) {
+            operator = "@>";
+        } else if (temporalFilter.getOperator() == RangeFilter.RangeOp.EQUALS) {
+            operator = "=";
+        } else if (temporalFilter.getOperator() == RangeFilter.RangeOp.INTERSECTS) {
+            operator = "&&";
         }
-        return  operatorString;
+        return  operator;
     }
 
     public static  String[] getRangeFromTemporal(TemporalFilter temporalFilter) {

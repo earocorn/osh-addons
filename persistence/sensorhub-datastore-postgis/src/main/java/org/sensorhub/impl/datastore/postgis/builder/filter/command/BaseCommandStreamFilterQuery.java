@@ -44,9 +44,8 @@ public abstract class BaseCommandStreamFilterQuery<F extends FilterQueryGenerato
 
     protected  void handleControlInputNames(SortedSet<String> names) {
         if (names != null && !names.isEmpty()) {
-            addCondition("("+this.tableName+".data->>'name') in (" +
-                    names.stream().map(name -> "'" + name + "'").collect(Collectors.joining(",")) +
-                    ")");
+            addCondition("("+this.tableName+".data->>'name') in (" + placeholders(names.size()) + ")");
+            names.forEach(this::addParameter);
         }
     }
 
@@ -54,10 +53,9 @@ public abstract class BaseCommandStreamFilterQuery<F extends FilterQueryGenerato
 
     protected void handleFullTextFilter(FullTextFilter fullTextFilter) {
         if (fullTextFilter != null) {
-            String sb = "(" + this.tableName + ".data->'recordSchema'->>'description') ~* '(" +
-                    fullTextFilter.getKeywords().stream().collect(Collectors.joining("|")) +
-                    ")'";
+            String sb = "(" + this.tableName + ".data->'recordSchema'->>'description') ~* ?";
             addCondition(sb);
+            addParameter("(" + fullTextFilter.getKeywords().stream().collect(Collectors.joining("|")) + ")");
         }
     }
 
@@ -74,18 +72,14 @@ public abstract class BaseCommandStreamFilterQuery<F extends FilterQueryGenerato
                 if (systemFilter.getInternalIDs() != null || systemFilter.getUniqueIDs() != null) {
                     // handle UNIQUE IDS
                     if (systemFilter.getUniqueIDs() != null && !systemFilter.getUniqueIDs().isEmpty()) {
-                        String sb = "(" + tableName + ".data->'system@id'->>'uniqueID') in ('" +
-                                String.join("','", systemFilter.getUniqueIDs()) +
-                                "')";
+                        String sb = "(" + tableName + ".data->'system@id'->>'uniqueID') in (" +
+                                placeholders(systemFilter.getUniqueIDs().size()) + ")";
                         addCondition(sb);
+                        systemFilter.getUniqueIDs().forEach(this::addParameter);
                     }
 
                     // handle internal IDS
                     if (systemFilter.getInternalIDs() != null && !systemFilter.getInternalIDs().isEmpty()) {
-                        String joinedIds = systemFilter.getInternalIDs().stream()
-                                .map(bigId -> String.valueOf(bigId.getIdAsLong()))
-                                .collect(Collectors.joining(","));
-
                         StringBuilder sb = new StringBuilder("(");
 
                         if (systemFilter.includeMembers()) {
@@ -93,12 +87,15 @@ public abstract class BaseCommandStreamFilterQuery<F extends FilterQueryGenerato
                             addJoin(sysDescTableName + " s ON (" + tableName +
                                     ".data->'system@id'->'internalID'->>'id')::bigint = s.id");
 
-                            sb.append("s.id IN (").append(joinedIds).append(")")
-                                    .append(" OR s.parentid IN (").append(joinedIds).append(")");
+                            sb.append("s.id IN (").append(placeholders(systemFilter.getInternalIDs().size())).append(")")
+                                    .append(" OR s.parentid IN (").append(placeholders(systemFilter.getInternalIDs().size())).append(")");
+                            systemFilter.getInternalIDs().forEach(bigId -> addParameter(bigId.getIdAsLong()));
+                            systemFilter.getInternalIDs().forEach(bigId -> addParameter(bigId.getIdAsLong()));
                         } else {
                             sb.append("(").append(tableName)
                                     .append(".data->'system@id'->'internalID'->>'id')::bigint IN (")
-                                    .append(joinedIds).append(")");
+                                    .append(placeholders(systemFilter.getInternalIDs().size())).append(")");
+                            systemFilter.getInternalIDs().forEach(bigId -> addParameter(bigId.getIdAsLong()));
                         }
 
                         sb.append(")");
@@ -116,19 +113,29 @@ public abstract class BaseCommandStreamFilterQuery<F extends FilterQueryGenerato
 
     protected void handleTaskableProperties(SortedSet<String> properties) {
         if(properties != null) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("jsonb_path_exists(").append(tableName).append(".data, '$.** ? (");
+            StringBuilder jsonPath = new StringBuilder();
+            jsonPath.append("$.** ? (");
             boolean first=true;
             for(String property : properties) {
                 if(!first) {
                     // prepend operator
-                    sb.append(" || ");
+                    jsonPath.append(" || ");
                 }
-                sb.append("@ == \"").append(property).append("\"");
+                jsonPath.append("@ == \"").append(escapeJsonString(property)).append("\"");
                 first = false;
             }
-            sb.append(")')");
-            addCondition(sb.toString());
+            jsonPath.append(")");
+            addCondition("jsonb_path_exists(" + tableName + ".data, ?::jsonpath)");
+            addParameter(jsonPath.toString());
         }
+    }
+
+    protected String escapeJsonString(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"");
     }
 }

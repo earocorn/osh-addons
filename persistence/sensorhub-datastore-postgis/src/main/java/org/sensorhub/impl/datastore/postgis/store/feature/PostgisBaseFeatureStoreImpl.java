@@ -28,6 +28,7 @@ import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.feature.IFeatureStoreBase;
 import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
+import org.sensorhub.impl.datastore.postgis.builder.ParameterizedQuery;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderFeatureStore;
 import org.sensorhub.impl.datastore.postgis.store.PostgisStore;
 import org.sensorhub.impl.datastore.postgis.builder.IteratorResultSet;
@@ -202,13 +203,13 @@ public abstract class PostgisBaseFeatureStoreImpl
     }
 
     public Stream<Entry<FeatureKey, V>> selectEntries(F filter, Set<VF> fields) {
-        String queryStr = queryBuilder.createSelectEntriesQuery(filter, fields);
+        ParameterizedQuery query = queryBuilder.createParameterizedSelectEntriesQuery(filter, fields);
         if(logger.isDebugEnabled()) {
-            logger.debug(queryStr);
+            logger.debug(query.sql());
         }
         IteratorResultSet<Entry<FeatureKey, V>> iteratorResultSet =
                 new IteratorResultSet<>(
-                        queryStr,
+                        query,
                         connectionManager,
                         STREAM_FETCH_SIZE,
                         (resultSet) -> resultSetToEntry(resultSet, fields),
@@ -312,9 +313,10 @@ public abstract class PostgisBaseFeatureStoreImpl
     @Override
     public PostgisFeatureKey getCurrentVersionKey(BigId internalID) {
         try (Connection connection = connectionManager.getConnection()) {
-            try (Statement statement = connection.createStatement()) {
-                String query = queryBuilder.selectLastVersionByIdQuery(internalID.getIdAsLong(), Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
-                try (ResultSet resultSet = statement.executeQuery(query)) {
+            try (PreparedStatement statement = connection.prepareStatement(queryBuilder.selectLastVersionByIdQuery())) {
+                statement.setLong(1, internalID.getIdAsLong());
+                statement.setString(2, Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
+                try (ResultSet resultSet = statement.executeQuery()) {
                     if (resultSet.next()) {
                         long id = resultSet.getLong("id");
                         PGobject pgRange = (PGobject) resultSet.getObject("validTime");
@@ -332,9 +334,10 @@ public abstract class PostgisBaseFeatureStoreImpl
     @Override
     public PostgisFeatureKey getCurrentVersionKey(String uid) {
         try (Connection connection = connectionManager.getConnection()) {
-            try (Statement statement = connection.createStatement()) {
-                String query = queryBuilder.selectLastVersionByUidQuery(uid, Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
-                try (ResultSet resultSet = statement.executeQuery(query)) {
+            try (PreparedStatement statement = connection.prepareStatement(queryBuilder.selectLastVersionByUidQuery())) {
+                statement.setString(1, uid);
+                statement.setString(2, Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
+                try (ResultSet resultSet = statement.executeQuery()) {
                     if (resultSet.next()) {
                         long id = resultSet.getLong("id");
                         PGobject pgRange = (PGobject) resultSet.getObject("validTime");
@@ -561,14 +564,14 @@ public abstract class PostgisBaseFeatureStoreImpl
     @Override
     public long removeEntries(F filter) {
         logger.debug("Remove Feature with filter={}", filter.toString());
-        String queryStr = queryBuilder.createRemoveEntriesQuery(filter);
-        System.out.println(queryStr);
+        ParameterizedQuery query = queryBuilder.createParameterizedRemoveEntriesQuery(filter);
         if(logger.isDebugEnabled()) {
-            logger.debug(queryStr);
+            logger.debug(query.sql());
         }
         try (Connection connection = this.connectionManager.getConnection()) {
-            try (Statement statement = connection.createStatement()) {
-                int rows = statement.executeUpdate(queryStr);
+            try (PreparedStatement statement = connection.prepareStatement(query.sql())) {
+                query.bind(statement);
+                int rows = statement.executeUpdate();
                 if (rows > 0) {
                     // TODO: invalidate only concerned keys
                     cache.invalidateAll();

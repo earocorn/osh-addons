@@ -27,6 +27,7 @@ import org.sensorhub.api.datastore.command.ICommandStreamStore;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
+import org.sensorhub.impl.datastore.postgis.builder.ParameterizedQuery;
 import org.sensorhub.impl.datastore.postgis.store.PostgisStore;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderCommandStreamStore;
 import org.sensorhub.impl.datastore.postgis.utils.SerializerUtils;
@@ -215,12 +216,13 @@ public class PostgisCommandStreamStoreImpl extends PostgisStore<QueryBuilderComm
     @Override
     public Stream<Entry<CommandStreamKey, ICommandStreamInfo>> selectEntries(CommandStreamFilter filter, Set<CommandStreamInfoField> fields) {
         // build request
-        String queryStr = queryBuilder.createSelectEntriesQuery(filter, fields);
-        logger.debug(queryStr);
+        ParameterizedQuery query = queryBuilder.createParameterizedSelectEntriesQuery(filter, fields);
+        logger.debug(query.sql());
         List<Entry<CommandStreamKey, ICommandStreamInfo>> results = new ArrayList<>();
         try(Connection connection = this.connectionManager.getConnection()) {
-            try (Statement statement = connection.createStatement()) {
-                try (ResultSet resultSet = statement.executeQuery(queryStr)) {
+            try (PreparedStatement statement = connection.prepareStatement(query.sql())) {
+                query.bind(statement);
+                try (ResultSet resultSet = statement.executeQuery()) {
                     while (resultSet.next()) {
                         long id = resultSet.getLong("id");
                         String data = resultSet.getString("data");

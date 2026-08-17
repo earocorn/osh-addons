@@ -14,6 +14,7 @@
 
 package org.sensorhub.impl.datastore.postgis.builder.query.stats;
 
+import org.sensorhub.impl.datastore.postgis.builder.ParameterizedQuery;
 import org.sensorhub.impl.datastore.postgis.builder.generator.SelectFilterStatsQueryGenerator;
 
 public class StatsQuery {
@@ -63,5 +64,9 @@ public class StatsQuery {
 
     public String toCountQuery() {
         return this.filterQueryGenerator.toCountQuery();
+    }
+
+    public ParameterizedQuery toParameterizedQuery() {
+        return this.filterQueryGenerator.toParameterizedQuery();
     }
 }

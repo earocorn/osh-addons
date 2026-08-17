@@ -41,8 +41,9 @@ public class RemoveCommandStreamFilterQuery extends BaseCommandStreamFilterQuery
                         tableName +
                         ".data->'validTime'->>'end')::timestamp)" +
                         " && " +
-                        "'[" + min + "," + max + "]'::tsrange";
+                        "?::tsrange";
                 addCondition(sb);
+                addParameter("[" + min + "," + max + "]");
             }
         }
     }

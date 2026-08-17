@@ -71,6 +71,10 @@ public class QueryBuilderCommandStatusStore extends QueryBuilder {
     }
 
     public String createSelectEntriesQuery(CommandStatusFilter filter, Set<ICommandStatusStore.CommandStatusField> fields) {
+        return createParameterizedSelectEntriesQuery(filter, fields).sql();
+    }
+
+    public ParameterizedQuery createParameterizedSelectEntriesQuery(CommandStatusFilter filter, Set<ICommandStatusStore.CommandStatusField> fields) {
         SelectEntriesCommandStatusQuery selectEntriesCommandStatusQuery = new SelectEntriesCommandStatusQuery.Builder()
                 .tableName(this.getStoreTableName())
                 .linkTo(this.systemStore)
@@ -79,6 +83,6 @@ public class QueryBuilderCommandStatusStore extends QueryBuilder {
                 .withStatusFilter(filter)
                 .withFields(fields)
                 .build();
-        return selectEntriesCommandStatusQuery.toQuery();
+        return selectEntriesCommandStatusQuery.toParameterizedQuery();
     }
 }

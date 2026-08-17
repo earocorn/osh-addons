@@ -29,8 +29,10 @@ import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.impl.datastore.DataStoreUtils;
 import org.sensorhub.impl.datastore.obs.DataStreamInfoWrapper;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
+import org.sensorhub.impl.datastore.postgis.builder.ParameterizedQuery;
 import org.sensorhub.impl.datastore.postgis.store.PostgisStore;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderDataStreamStore;
+import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.sensorhub.impl.datastore.postgis.utils.SerializerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -154,13 +156,14 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
     @Override
     public Stream<Entry<DataStreamKey, IDataStreamInfo>> selectEntries(DataStreamFilter filter, Set<DataStreamInfoField> fields) {
         // build request
-        String queryStr = queryBuilder.createSelectEntriesQuery(filter, fields);
+        ParameterizedQuery query = queryBuilder.createParameterizedSelectEntriesQuery(filter, fields);
 
         Map<DataStreamKey, IDataStreamInfo> results = new HashMap<>();
 
         try (Connection connection = this.connectionManager.getConnection()) {
-            try (Statement statement = connection.createStatement()) {
-                try (ResultSet resultSet = statement.executeQuery(queryStr)) {
+            try (PreparedStatement statement = connection.prepareStatement(query.sql())) {
+                query.bind(statement);
+                try (ResultSet resultSet = statement.executeQuery()) {
                     while (resultSet.next()) {
                         long id = resultSet.getLong("id");
                         String data = resultSet.getString("data");
@@ -192,7 +195,7 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
             throw new RuntimeException(e);
         }
 
-        logger.debug("{}, {}", queryStr, results.size());
+        logger.debug("{}, {}", query.sql(), results.size());
         return results.entrySet().stream();
     }
 
@@ -447,10 +450,10 @@ public class PostgisDataStreamStoreImpl extends PostgisStore<QueryBuilderDataStr
     public Set<Long> getDataStreamsIdsByTimeRange(Instant min, Instant max) {
         Set<Long> results = new LinkedHashSet<>();
         try (Connection connection = this.connectionManager.getConnection()) {
-            try (Statement statement = connection.createStatement()) {
-                String queryStr = queryBuilder.getAllDataStreams(min, max);
-                logger.debug(queryStr);
-                try (ResultSet resultSet = statement.executeQuery(queryStr)) {
+            try (PreparedStatement statement = connection.prepareStatement(queryBuilder.getAllDataStreams())) {
+                statement.setString(1, "[" + PostgisUtils.checkAndGetValidInstant(min) + "," + PostgisUtils.checkAndGetValidInstant(max) + "]");
+                logger.debug(queryBuilder.getAllDataStreams());
+                try (ResultSet resultSet = statement.executeQuery()) {
                     while (resultSet.next())
                         results.add(resultSet.getLong("id"));
                 }

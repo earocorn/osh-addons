@@ -114,7 +114,11 @@ public class QueryBuilderObsStore extends QueryBuilder {
     }
 
     public String getPhenomenonTimeRangeByDataStreamIdQuery(long dataStreamID) {
-        return "SELECT Min("+PHENOMENON_TIME+"),Max("+PHENOMENON_TIME+") FROM "+this.getStoreTableName()+" WHERE "+DATASTREAM_ID+" = "+dataStreamID;
+        return getPhenomenonTimeRangeByDataStreamIdQuery();
+    }
+
+    public String getPhenomenonTimeRangeByDataStreamIdQuery() {
+        return "SELECT Min("+PHENOMENON_TIME+"),Max("+PHENOMENON_TIME+") FROM "+this.getStoreTableName()+" WHERE "+DATASTREAM_ID+" = ?";
     }
 
     public String getPhenomenonTimeRangeByDataStreamIdsQuery() {
@@ -148,7 +152,11 @@ public class QueryBuilderObsStore extends QueryBuilder {
     }
 
     public String getResultTimeRangeByDataStreamIdQuery(long dataStreamID) {
-        return "SELECT Min("+RESULT_TIME+"),Max("+RESULT_TIME+") FROM "+this.getStoreTableName()+" WHERE "+DATASTREAM_ID+" = "+dataStreamID;
+        return getResultTimeRangeByDataStreamIdQuery();
+    }
+
+    public String getResultTimeRangeByDataStreamIdQuery() {
+        return "SELECT Min("+RESULT_TIME+"),Max("+RESULT_TIME+") FROM "+this.getStoreTableName()+" WHERE "+DATASTREAM_ID+" = ?";
     }
 
     public String getResultTimeRangeByDataStreamIdsQuery() {
@@ -177,6 +185,10 @@ public class QueryBuilderObsStore extends QueryBuilder {
     }
 
     public String createSelectEntriesQuery(ObsFilter filter, Set<IObsStore.ObsField> fields) {
+        return createParameterizedSelectEntriesQuery(filter, fields).sql();
+    }
+
+    public ParameterizedQuery createParameterizedSelectEntriesQuery(ObsFilter filter, Set<IObsStore.ObsField> fields) {
         SelectEntriesObsQuery selectEntriesObsQuery = new SelectEntriesObsQuery.Builder()
                 .tableName(this.getStoreTableName())
                 .linkTo(this.systemStore)
@@ -186,10 +198,14 @@ public class QueryBuilderObsStore extends QueryBuilder {
                 .withObsFilter(filter)
                 .withLimit(filter.getLimit())
                 .build();
-        return selectEntriesObsQuery.toQuery();
+        return selectEntriesObsQuery.toParameterizedQuery();
     }
 
     public String createSelectEntriesCountQuery(ObsFilter filter) {
+        return createParameterizedSelectEntriesCountQuery(filter).sql();
+    }
+
+    public ParameterizedQuery createParameterizedSelectEntriesCountQuery(ObsFilter filter) {
         SelectEntriesObsQuery selectEntriesObsQuery = new SelectEntriesObsQuery.Builder()
                 .tableName(this.getStoreTableName())
                 .linkTo(this.systemStore)
@@ -197,7 +213,7 @@ public class QueryBuilderObsStore extends QueryBuilder {
                 .linkTo(this.foiStore)
                 .withObsFilter(filter)
                 .build();
-        return selectEntriesObsQuery.toCountQuery();
+        return selectEntriesObsQuery.toParameterizedCountQuery();
     }
 
     public String statsQueryByFoi(ObsStatsQuery obsStatsQuery, long foiId) {
@@ -214,6 +230,10 @@ public class QueryBuilderObsStore extends QueryBuilder {
     }
 
     public String statsQueryByDataStream(ObsStatsQuery obsStatsQuery, long dsId) {
+        return parameterizedStatsQueryByDataStream(obsStatsQuery, dsId).sql();
+    }
+
+    public ParameterizedQuery parameterizedStatsQueryByDataStream(ObsStatsQuery obsStatsQuery, long dsId) {
         StatsObsQuery statsObsQuery = new StatsObsQuery.Builder()
                 .tableName(this.getStoreTableName())
                 .linkTo(this.systemStore)
@@ -223,10 +243,14 @@ public class QueryBuilderObsStore extends QueryBuilder {
                 .withObsStatsFilter(obsStatsQuery)
                 .withLimit(obsStatsQuery.getLimit())
                 .build();
-        return statsObsQuery.toQuery();
+        return statsObsQuery.toParameterizedQuery();
     }
 
     public String createRemoveEntriesQuery(ObsFilter filter) {
+        return createParameterizedRemoveEntriesQuery(filter).sql();
+    }
+
+    public ParameterizedQuery createParameterizedRemoveEntriesQuery(ObsFilter filter) {
         RemoveEntriesObsQuery removeEntriesObsQuery = new RemoveEntriesObsQuery.Builder()
                 .tableName(this.getStoreTableName())
                 .linkTo(this.systemStore)
@@ -234,6 +258,6 @@ public class QueryBuilderObsStore extends QueryBuilder {
                 .linkTo(this.foiStore)
                 .withObsFilter(filter)
                 .build();
-        return removeEntriesObsQuery.toQuery();
+        return removeEntriesObsQuery.toParameterizedQuery();
     }
 }

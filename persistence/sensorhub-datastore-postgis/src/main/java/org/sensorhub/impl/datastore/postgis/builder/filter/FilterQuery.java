@@ -44,9 +44,8 @@ public abstract class FilterQuery<F extends FilterQueryGenerator> {
             if(ids.size() == 1) {
                 operator = "=";
             }
-            addCondition(this.tableName+".id "+operator+" (" +
-                    ids.stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
-                    ")");
+            addCondition(this.tableName+".id "+operator+" (" + placeholders(ids.size()) + ")");
+            ids.forEach(bigId -> addParameter(bigId.getIdAsLong()));
         }
     }
 
@@ -56,6 +55,16 @@ public abstract class FilterQuery<F extends FilterQueryGenerator> {
 
     protected void addCondition(String condition) {
         filterQueryGenerator.addCondition(condition);
+    }
+
+    protected void addParameter(Object parameter) {
+        filterQueryGenerator.addParameter(parameter);
+    }
+
+    protected String placeholders(int count) {
+        return java.util.stream.IntStream.range(0, count)
+                .mapToObj(i -> "?")
+                .collect(Collectors.joining(","));
     }
 
     public void setCommandStreamTableName(String commandStreamTableName) {

@@ -1,5 +1,7 @@
 package org.sensorhub.impl.datastore.postgis.builder.generator;
 
+import org.sensorhub.impl.datastore.postgis.builder.ParameterizedQuery;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,6 +13,7 @@ public abstract class FilterQueryGenerator {
     protected  String tableName;
     protected List<String> selectFields;
     protected List<String> joins;
+    protected List<Object> parameters = new ArrayList<>();
 
     public void tableName(String tableName) {
         this.tableName = tableName;
@@ -49,6 +52,14 @@ public abstract class FilterQueryGenerator {
         this.addConditions.add(condition);
     }
 
+    public void addParameter(Object parameter) {
+        this.parameters.add(parameter);
+    }
+
+    public void addParameters(List<?> parameters) {
+        this.parameters.addAll(parameters);
+    }
+
     public void addJoin(String join) {
         this.checkJoins();
         this.joins.add(join);
@@ -68,5 +79,13 @@ public abstract class FilterQueryGenerator {
         this.selectFields = fields;
     }
 
-    public abstract  String toQuery();
+    public List<Object> getParameters() {
+        return List.copyOf(parameters);
+    }
+
+    public ParameterizedQuery toParameterizedQuery() {
+        return new ParameterizedQuery(toQuery(), getParameters());
+    }
+
+    public abstract String toQuery();
 }

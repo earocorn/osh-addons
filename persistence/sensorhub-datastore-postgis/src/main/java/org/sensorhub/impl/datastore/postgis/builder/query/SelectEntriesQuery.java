@@ -1,6 +1,7 @@
 package org.sensorhub.impl.datastore.postgis.builder.query;
 
 import org.sensorhub.api.datastore.ValueField;
+import org.sensorhub.impl.datastore.postgis.builder.ParameterizedQuery;
 import org.sensorhub.impl.datastore.postgis.builder.generator.SelectFilterQueryGenerator;
 
 import java.util.Set;
@@ -43,6 +44,10 @@ public class SelectEntriesQuery extends EntriesQuery<SelectFilterQueryGenerator>
 
     public String toCountQuery() {
         return this.filterQueryGenerator.toCountQuery();
+    }
+
+    public ParameterizedQuery toParameterizedCountQuery() {
+        return this.filterQueryGenerator.toParameterizedCountQuery();
     }
 
 }

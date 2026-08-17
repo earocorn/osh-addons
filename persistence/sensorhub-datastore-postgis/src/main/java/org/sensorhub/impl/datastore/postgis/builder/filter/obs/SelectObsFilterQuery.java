@@ -55,6 +55,7 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
             return;
 
         filterQueryGenerator.addCondition(whereClause);
+        filterQueryGenerator.addParameters(cqlHandler.getParameters());
     }
 
     protected void handleSorted(boolean descending) {
@@ -74,10 +75,8 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
                 }
 
                 this.filterQueryGenerator.addCondition(this.tableName + "." + DATASTREAM_ID + " "+operator+" ("+
-                        dataStreamFilter.getInternalIDs()
-                                .stream()
-                                .map(bigId -> String.valueOf(bigId.getIdAsLong()))
-                                .collect(Collectors.joining(","))+")");
+                        placeholders(dataStreamFilter.getInternalIDs().size()) + ")");
+                dataStreamFilter.getInternalIDs().forEach(bigId -> addParameter(bigId.getIdAsLong()));
             } else {
                 // create join
                 Asserts.checkNotNull(dataStreamTableName, "dataStreamTableName should not be null");
@@ -128,14 +127,18 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
 
         if (hasMin && hasMax) {
             // Both bounds: use >= AND <=
-            addCondition(columnName + " >= '" + escapeSqlString(min) + "'");
-            addCondition(columnName + " <= '" + escapeSqlString(max) + "'");
+            addCondition(columnName + " >= ?::timestamp");
+            addParameter(min);
+            addCondition(columnName + " <= ?::timestamp");
+            addParameter(max);
         } else if (hasMin) {
             // Only lower bound
-            addCondition(columnName + " >= '" + escapeSqlString(min) + "'");
+            addCondition(columnName + " >= ?::timestamp");
+            addParameter(min);
         } else if (hasMax) {
             // Only upper bound
-            addCondition(columnName + " <= '" + escapeSqlString(max) + "'");
+            addCondition(columnName + " <= ?::timestamp");
+            addParameter(max);
         }
         // If neither bound is valid, no condition is added (matches all times)
     }
@@ -146,13 +149,6 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
         }
         String lower = bound.toLowerCase().trim();
         return !lower.equals("-infinity") && !lower.equals("infinity");
-    }
-
-    private String escapeSqlString(String value) {
-        if (value == null) {
-            return "";
-        }
-        return value.replace("'", "''");
     }
 
     protected void handleFoiFilter(FoiFilter foiFilter, ObsFilter obsFilter) {
@@ -179,8 +175,8 @@ public class SelectObsFilterQuery extends BaseObsFilterQuery<SelectFilterQueryGe
                                 operator = "=";
                             }
                             addCondition(this.tableName + "." + FOI_ID + " "+operator+" (" +
-                                    foiFilter.getInternalIDs().stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
-                                    ")");
+                                    placeholders(foiFilter.getInternalIDs().size()) + ")");
+                            foiFilter.getInternalIDs().forEach(bigId -> addParameter(bigId.getIdAsLong()));
                         }
                     }
                 }

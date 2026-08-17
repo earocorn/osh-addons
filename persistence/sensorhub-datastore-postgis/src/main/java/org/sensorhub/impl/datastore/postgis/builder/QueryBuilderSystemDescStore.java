@@ -49,9 +49,14 @@ public class QueryBuilderSystemDescStore extends QueryBuilderBaseFeatureStore<IS
 
     @Override
     public String selectLastVersionByUidQuery(String uid, String timestamp) {
+        return selectLastVersionByUidQuery();
+    }
+
+    @Override
+    public String selectLastVersionByUidQuery() {
         return "SELECT DISTINCT ON (id) id,parentid,validTime " +
-                "FROM " + this.getStoreTableName() + " WHERE (data->>'uniqueId') = '" + uid + "' AND " +
-                this.getStoreTableName()+".validTime @> '" + timestamp + "'::timestamp "+
+                "FROM " + this.getStoreTableName() + " WHERE (data->>'uniqueId') = ? AND " +
+                this.getStoreTableName()+".validTime @> ?::timestamp "+
                 "order by id, lower(validTime) DESC";
     }
 
@@ -82,20 +87,30 @@ public class QueryBuilderSystemDescStore extends QueryBuilderBaseFeatureStore<IS
 
     @Override
     public String createSelectEntriesQuery(SystemFilter filter, Set<ISystemDescStore.SystemField> fields) {
+        return createParameterizedSelectEntriesQuery(filter, fields).sql();
+    }
+
+    @Override
+    public ParameterizedQuery createParameterizedSelectEntriesQuery(SystemFilter filter, Set<ISystemDescStore.SystemField> fields) {
         SelectEntriesSystemQuery selectEntriesSystemQuery = new SelectEntriesSystemQuery.Builder()
                 .tableName(this.getStoreTableName())
                 .withFields(fields)
                 .withSystemFilter(filter)
                 .build();
-        return selectEntriesSystemQuery.toQuery();
+        return selectEntriesSystemQuery.toParameterizedQuery();
     }
 
     @Override
     public String createRemoveEntriesQuery(SystemFilter filter) {
+        return createParameterizedRemoveEntriesQuery(filter).sql();
+    }
+
+    @Override
+    public ParameterizedQuery createParameterizedRemoveEntriesQuery(SystemFilter filter) {
         RemoveEntriesSystemQuery removeEntriesSystemQuery = new RemoveEntriesSystemQuery.Builder()
                 .tableName(this.getStoreTableName())
                 .withSystemFilter(filter)
                 .build();
-        return removeEntriesSystemQuery.toQuery();
+        return removeEntriesSystemQuery.toParameterizedQuery();
     }
 }

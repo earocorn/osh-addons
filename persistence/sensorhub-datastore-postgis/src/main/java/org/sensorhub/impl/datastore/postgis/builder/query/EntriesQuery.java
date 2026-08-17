@@ -14,6 +14,7 @@
 
 package org.sensorhub.impl.datastore.postgis.builder.query;
 
+import org.sensorhub.impl.datastore.postgis.builder.ParameterizedQuery;
 import org.sensorhub.impl.datastore.postgis.builder.generator.FilterQueryGenerator;
 
 public class EntriesQuery<V extends FilterQueryGenerator> {
@@ -56,6 +57,10 @@ public class EntriesQuery<V extends FilterQueryGenerator> {
 
     public String toQuery() {
         return this.filterQueryGenerator.toQuery();
+    }
+
+    public ParameterizedQuery toParameterizedQuery() {
+        return this.filterQueryGenerator.toParameterizedQuery();
     }
 
 }

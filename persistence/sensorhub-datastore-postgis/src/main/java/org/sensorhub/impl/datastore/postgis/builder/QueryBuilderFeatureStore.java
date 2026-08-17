@@ -35,20 +35,30 @@ public class QueryBuilderFeatureStore extends QueryBuilderBaseFeatureStore<IFeat
 
     @Override
     public String createSelectEntriesQuery(FeatureFilter filter, Set<IFeatureStoreBase.FeatureField> fields) {
+        return createParameterizedSelectEntriesQuery(filter, fields).sql();
+    }
+
+    @Override
+    public ParameterizedQuery createParameterizedSelectEntriesQuery(FeatureFilter filter, Set<IFeatureStoreBase.FeatureField> fields) {
         SelectEntriesFeatureQuery selectEntriesFeatureQuery = new SelectEntriesFeatureQuery.Builder()
                 .tableName(this.getStoreTableName())
                 .withFields(fields)
                 .withFeatureFilter(filter)
                 .build();
-        return selectEntriesFeatureQuery.toQuery();
+        return selectEntriesFeatureQuery.toParameterizedQuery();
     }
 
     @Override
     public String createRemoveEntriesQuery(FeatureFilter filter) {
+        return createParameterizedRemoveEntriesQuery(filter).sql();
+    }
+
+    @Override
+    public ParameterizedQuery createParameterizedRemoveEntriesQuery(FeatureFilter filter) {
         RemoveEntriesFeatureQuery removeEntriesFeatureQuery = new RemoveEntriesFeatureQuery.Builder()
                 .tableName(this.getStoreTableName())
                 .withFeatureFilter(filter)
                 .build();
-        return removeEntriesFeatureQuery.toQuery();
+        return removeEntriesFeatureQuery.toParameterizedQuery();
     }
 }

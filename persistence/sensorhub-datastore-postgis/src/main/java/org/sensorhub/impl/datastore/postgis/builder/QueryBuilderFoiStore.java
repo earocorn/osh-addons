@@ -35,6 +35,11 @@ public class QueryBuilderFoiStore extends QueryBuilderBaseFeatureStore<IFeature,
 
     @Override
     public String createSelectEntriesQuery(FoiFilter filter, Set<IFoiStore.FoiField> fields) {
+        return createParameterizedSelectEntriesQuery(filter, fields).sql();
+    }
+
+    @Override
+    public ParameterizedQuery createParameterizedSelectEntriesQuery(FoiFilter filter, Set<IFoiStore.FoiField> fields) {
         SelectEntriesFoiQuery selectEntriesFoiQuery = new SelectEntriesFoiQuery.Builder()
                 .tableName(this.getStoreTableName())
                 .linkTo(this.systemStore)
@@ -43,11 +48,16 @@ public class QueryBuilderFoiStore extends QueryBuilderBaseFeatureStore<IFeature,
                 .withFields(fields)
                 .withFoiFilter(filter)
                 .build();
-        return selectEntriesFoiQuery.toQuery();
+        return selectEntriesFoiQuery.toParameterizedQuery();
     }
 
     @Override
     public String createRemoveEntriesQuery(FoiFilter filter) {
+        return createParameterizedRemoveEntriesQuery(filter).sql();
+    }
+
+    @Override
+    public ParameterizedQuery createParameterizedRemoveEntriesQuery(FoiFilter filter) {
         RemoveEntriesFoiQuery removeEntriesFoiQuery = new RemoveEntriesFoiQuery.Builder()
                 .tableName(this.getStoreTableName())
                 .linkTo(this.systemStore)
@@ -55,6 +65,6 @@ public class QueryBuilderFoiStore extends QueryBuilderBaseFeatureStore<IFeature,
                 .linkTo(this.obsStore)
                 .withFoiFilter(filter)
                 .build();
-        return removeEntriesFoiQuery.toQuery();
+        return removeEntriesFoiQuery.toParameterizedQuery();
     }
 }

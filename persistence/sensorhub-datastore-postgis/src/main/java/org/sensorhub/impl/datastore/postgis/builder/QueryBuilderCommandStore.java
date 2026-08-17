@@ -92,6 +92,10 @@ public class QueryBuilderCommandStore extends QueryBuilder {
     }
 
     public String createSelectEntriesQuery(CommandFilter filter, Set<ICommandStore.CommandField> fields) {
+        return createParameterizedSelectEntriesQuery(filter, fields).sql();
+    }
+
+    public ParameterizedQuery createParameterizedSelectEntriesQuery(CommandFilter filter, Set<ICommandStore.CommandField> fields) {
         SelectEntriesCommandQuery selectEntriesCommandQueryBuilder = new SelectEntriesCommandQuery.Builder()
                 .tableName(this.getStoreTableName())
                 .linkTo(this.systemStore)
@@ -100,7 +104,7 @@ public class QueryBuilderCommandStore extends QueryBuilder {
                 .withCommandFilter(filter)
                 .withFields(fields)
                 .build();
-        return selectEntriesCommandQueryBuilder.toQuery();
+        return selectEntriesCommandQueryBuilder.toParameterizedQuery();
     }
 
 }

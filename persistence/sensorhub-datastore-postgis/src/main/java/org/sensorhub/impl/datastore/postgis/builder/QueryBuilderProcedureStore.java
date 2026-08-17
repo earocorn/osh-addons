@@ -35,20 +35,30 @@ public class QueryBuilderProcedureStore extends QueryBuilderBaseFeatureStore<IPr
 
     @Override
     public String createSelectEntriesQuery(ProcedureFilter filter, Set<IProcedureStore.ProcedureField> fields) {
+        return createParameterizedSelectEntriesQuery(filter, fields).sql();
+    }
+
+    @Override
+    public ParameterizedQuery createParameterizedSelectEntriesQuery(ProcedureFilter filter, Set<IProcedureStore.ProcedureField> fields) {
         SelectEntriesProcedureQuery selectEntriesProcedureQuery = new SelectEntriesProcedureQuery.Builder()
                 .tableName(this.getStoreTableName())
                 .withFields(fields)
                 .withProcedureFilter(filter)
                 .build();
-        return selectEntriesProcedureQuery.toQuery();
+        return selectEntriesProcedureQuery.toParameterizedQuery();
     }
 
     @Override
     public String createRemoveEntriesQuery(ProcedureFilter filter) {
+        return createParameterizedRemoveEntriesQuery(filter).sql();
+    }
+
+    @Override
+    public ParameterizedQuery createParameterizedRemoveEntriesQuery(ProcedureFilter filter) {
         RemoveEntriesProcedureQuery removeEntriesProcedureQuery = new RemoveEntriesProcedureQuery.Builder()
                 .tableName(this.getStoreTableName())
                 .withProcedureFilter(filter)
                 .build();
-        return removeEntriesProcedureQuery.toQuery();
+        return removeEntriesProcedureQuery.toParameterizedQuery();
     }
 }

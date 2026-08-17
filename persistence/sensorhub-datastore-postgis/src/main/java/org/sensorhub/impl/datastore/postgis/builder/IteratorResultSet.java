@@ -19,10 +19,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
@@ -34,6 +35,7 @@ public class IteratorResultSet<T> implements Iterator<T> {
     private long offset = 0;
 
     private String query;
+    private List<Object> parameters = List.of();
 
     private ConnectionManager connectionManager;
 
@@ -58,6 +60,16 @@ public class IteratorResultSet<T> implements Iterator<T> {
         this.connectionManager = connectionManager;
         this.predicateValidator = predicateValidator;
         this.useInternalLimit = !query.contains("LIMIT");
+    }
+
+    public IteratorResultSet(ParameterizedQuery query,
+                             ConnectionManager connectionManager,
+                             long limit,
+                             Function<ResultSet, T> parsingFn,
+                             Function<T, Boolean> predicateValidator
+    ) {
+        this(query.sql(), connectionManager, limit, parsingFn, predicateValidator);
+        this.parameters = query.parameters();
     }
 
     @Override
@@ -92,10 +104,13 @@ public class IteratorResultSet<T> implements Iterator<T> {
     private void makeRequest() {
         long countRes = 0;
         try (Connection connection = connectionManager.getConnection()) {
-            try(Statement statement = connection.createStatement()) {
-                String nextQuery = getQuery();
-                logger.debug(nextQuery);
-                try (ResultSet resultSet = statement.executeQuery(nextQuery)){
+            String nextQuery = getQuery();
+            logger.debug(nextQuery);
+            try (PreparedStatement statement = connection.prepareStatement(nextQuery)) {
+                for (int i = 0; i < parameters.size(); i++) {
+                    statement.setObject(i + 1, parameters.get(i));
+                }
+                try (ResultSet resultSet = statement.executeQuery()){
                     while (resultSet.next()) {
                         countRes++;
                         T res = this.parsingFn.apply(resultSet);

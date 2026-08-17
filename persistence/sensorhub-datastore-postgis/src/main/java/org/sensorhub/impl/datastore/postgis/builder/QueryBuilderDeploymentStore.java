@@ -35,20 +35,30 @@ public class QueryBuilderDeploymentStore extends QueryBuilderBaseFeatureStore<ID
 
     @Override
     public String createSelectEntriesQuery(DeploymentFilter filter, Set<IDeploymentStore.DeploymentField> fields) {
+        return createParameterizedSelectEntriesQuery(filter, fields).sql();
+    }
+
+    @Override
+    public ParameterizedQuery createParameterizedSelectEntriesQuery(DeploymentFilter filter, Set<IDeploymentStore.DeploymentField> fields) {
         SelectEntriesDeploymentQuery selectEntriesDeploymentQuery = new SelectEntriesDeploymentQuery.Builder()
                 .tableName(this.getStoreTableName())
                 .withFields(fields)
                 .withDeploymentFilter(filter)
                 .build();
-        return selectEntriesDeploymentQuery.toQuery();
+        return selectEntriesDeploymentQuery.toParameterizedQuery();
     }
 
     @Override
     public String createRemoveEntriesQuery(DeploymentFilter filter) {
+        return createParameterizedRemoveEntriesQuery(filter).sql();
+    }
+
+    @Override
+    public ParameterizedQuery createParameterizedRemoveEntriesQuery(DeploymentFilter filter) {
         RemoveEntriesDeploymentQuery removeEntriesDeploymentQuery = new RemoveEntriesDeploymentQuery.Builder()
                 .tableName(this.getStoreTableName())
                 .withDeploymentFilter(filter)
                 .build();
-        return removeEntriesDeploymentQuery.toQuery();
+        return removeEntriesDeploymentQuery.toParameterizedQuery();
     }
 }

@@ -26,6 +26,7 @@ import org.sensorhub.api.datastore.feature.IFoiStore;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 import org.sensorhub.impl.datastore.postgis.store.PostgisStore;
 import org.sensorhub.impl.datastore.postgis.builder.IteratorResultSet;
+import org.sensorhub.impl.datastore.postgis.builder.ParameterizedQuery;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderCommandStore;
 import org.sensorhub.impl.datastore.postgis.utils.SerializerUtils;
 import org.slf4j.Logger;
@@ -78,13 +79,13 @@ public class PostgisCommandStoreImpl extends PostgisStore<QueryBuilderCommandSto
     }
     @Override
     public Stream<Entry<BigId, ICommandData>> selectEntries(CommandFilter filter, Set<CommandField> fields) {
-        String queryStr = queryBuilder.createSelectEntriesQuery(filter, fields);
+        ParameterizedQuery query = queryBuilder.createParameterizedSelectEntriesQuery(filter, fields);
         if(logger.isDebugEnabled()) {
-            logger.debug(queryStr);
+            logger.debug(query.sql());
         }
         IteratorResultSet<Entry<BigId, ICommandData>> iteratorResultSet =
                 new IteratorResultSet<>(
-                        queryStr,
+                        query,
                         connectionManager,
                         filter.getLimit(),
                         (resultSet) -> resultSetToEntry(resultSet, fields),

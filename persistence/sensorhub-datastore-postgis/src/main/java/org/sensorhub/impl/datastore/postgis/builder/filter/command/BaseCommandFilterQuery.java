@@ -8,7 +8,6 @@ import org.sensorhub.impl.datastore.postgis.builder.filter.FilterQuery;
 import org.sensorhub.impl.datastore.postgis.builder.generator.FilterQueryGenerator;
 
 import java.util.SortedSet;
-import java.util.stream.Collectors;
 
 public abstract class BaseCommandFilterQuery<F extends FilterQueryGenerator> extends FilterQuery<F> {
     protected BaseCommandFilterQuery(String tableName, F filterQueryGenerator) {
@@ -27,8 +26,8 @@ public abstract class BaseCommandFilterQuery<F extends FilterQueryGenerator> ext
     protected void handleSenderIDs(SortedSet<String> ids) {
         if (ids != null && !ids.isEmpty()) {
             addCondition(this.tableName + ".sendId in (" +
-                    ids.stream().collect(Collectors.joining(",")) +
-                    ")");
+                    placeholders(ids.size()) + ")");
+            ids.forEach(this::addParameter);
         }
     }
 

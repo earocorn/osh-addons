@@ -59,8 +59,12 @@ public class RemoveObsFilterQuery extends BaseObsFilterQuery<RemoveFilterQueryGe
             if (temporalFilter.isLatestTime()) {
                 throw new UnsupportedOperationException("PhenomenonTimeFilter does not support Latest for REMOVE operation");
             } else {
+                String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
+                String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
                 addCondition(
-                        "tsrange('"+temporalFilter.getMin()+"','"+temporalFilter.getMax()+"', '[]') @> "+this.tableName+".phenomenonTime");
+                        "tsrange(?::timestamp, ?::timestamp, '[]') @> "+this.tableName+".phenomenonTime");
+                addParameter(min);
+                addParameter(max);
             }
         }
     }
@@ -73,7 +77,9 @@ public class RemoveObsFilterQuery extends BaseObsFilterQuery<RemoveFilterQueryGe
                 String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
                 String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
                 addCondition(
-                        "tsrange('"+min+"','"+max+"', '[]') @> "+this.tableName+".resultTime");
+                        "tsrange(?::timestamp, ?::timestamp, '[]') @> "+this.tableName+".resultTime");
+                addParameter(min);
+                addParameter(max);
             }
         }
     }
@@ -102,8 +108,8 @@ public class RemoveObsFilterQuery extends BaseObsFilterQuery<RemoveFilterQueryGe
                             addCondition(this.tableName + "." + FOI_ID + " IS NULL");
                         } else {
                             addCondition(this.tableName + "." + FOI_ID + " in (" +
-                                    foiFilter.getInternalIDs().stream().map(bigId -> String.valueOf(bigId.getIdAsLong())).collect(Collectors.joining(",")) +
-                                    ")");
+                                    placeholders(foiFilter.getInternalIDs().size()) + ")");
+                            foiFilter.getInternalIDs().forEach(bigId -> addParameter(bigId.getIdAsLong()));
                         }
                     }
                 }

@@ -14,24 +14,32 @@ import org.geotools.api.filter.Not;
 import org.geotools.api.filter.expression.PropertyName;
 import org.geotools.api.filter.expression.Literal;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CQLFilterHandler {
 
     private StringBuilder whereClause;
+    private List<Object> parameters;
 
     public CQLFilterHandler() {
         this.whereClause = new StringBuilder();
+        this.parameters = new ArrayList<>();
     }
 
     public String buildWhereClause(Filter filter) {
         whereClause.setLength(0);
+        parameters.clear();
 
         if (filter != null && filter != Filter.INCLUDE) {
             processFilter(filter);
         }
 
         return whereClause.toString();
+    }
+
+    public List<Object> getParameters() {
+        return List.copyOf(parameters);
     }
 
     private void processFilter(Filter filter) {
@@ -97,11 +105,12 @@ public class CQLFilterHandler {
             whereClause.append(buildJsonPathExtract(propertyName)).append(" IS NULL");
         } else if (value instanceof Boolean || value instanceof Number || value instanceof String) {
             // Use containment operator for GIN index optimization
-            whereClause.append("result @> ").append(buildNestedJsonObject(propertyName, value));
+            whereClause.append("result @> ?::jsonb");
+            parameters.add(buildNestedJsonObject(propertyName, value));
         } else {
             // Fallback for other types
-            whereClause.append(buildJsonPathExtract(propertyName)).append(" = ")
-                    .append(escapeSqlString(value.toString()));
+            whereClause.append(buildJsonPathExtract(propertyName)).append(" = ?");
+            parameters.add(value.toString());
         }
     }
 
@@ -123,10 +132,11 @@ public class CQLFilterHandler {
                     : value instanceof Number ? "number" : "string";
             whereClause.append("(jsonb_typeof(").append(jsonbPath).append(") = '")
                     .append(expectedType).append("' AND NOT (result @> ")
-                    .append(buildNestedJsonObject(propertyName, value)).append("))");
+                    .append("?::jsonb").append("))");
+            parameters.add(buildNestedJsonObject(propertyName, value));
         } else {
-            whereClause.append(buildJsonPathExtract(propertyName)).append(" != ")
-                    .append(escapeSqlString(value.toString()));
+            whereClause.append(buildJsonPathExtract(propertyName)).append(" != ?");
+            parameters.add(value.toString());
         }
     }
 
@@ -167,7 +177,8 @@ public class CQLFilterHandler {
 
         whereClause.append("(jsonb_typeof(").append(jsonbPath).append(") = 'number' AND (")
                 .append(buildJsonPathExtract(propertyName)).append(")::numeric ")
-                .append(operator).append(" ").append(value).append(")");
+                .append(operator).append(" ?::numeric)");
+        parameters.add(value);
     }
 
     private void handleLike(PropertyIsLike filter) {
@@ -182,8 +193,8 @@ public class CQLFilterHandler {
                 .replace("*", "%")
                 .replace("?", "_");
 
-        whereClause.append(buildJsonPathExtract(propertyName)).append(" LIKE '")
-                .append(pattern).append("'");
+        whereClause.append(buildJsonPathExtract(propertyName)).append(" LIKE ?");
+        parameters.add(pattern);
     }
 
     /**
@@ -192,7 +203,7 @@ public class CQLFilterHandler {
      *
      * @param propertyPath Dot-separated property path
      * @param value        The value to match
-     * @return SQL string for containment check
+     * @return JSON string for containment check
      */
     private String buildNestedJsonObject(String propertyPath, Object value) {
         String[] parts = propertyPath.split("\\.");
@@ -211,7 +222,7 @@ public class CQLFilterHandler {
             json.append("}");
         }
 
-        return "'" + json.toString() + "'::jsonb";
+        return json.toString();
     }
 
     /**
@@ -296,11 +307,4 @@ public class CQLFilterHandler {
         throw new IllegalArgumentException("Expected Literal expression");
     }
 
-    private String escapeSqlString(String value) {
-        if (value == null) {
-            return "NULL";
-        }
-        String escaped = value.replace("'", "''");
-        return "'" + escaped + "'";
-    }
 }

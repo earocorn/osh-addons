@@ -50,14 +50,14 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
     }
 
     protected void handleId(long id) {
-        filterQueryGenerator.addCondition(this.tableName+".id = "+id);
+        filterQueryGenerator.addCondition(this.tableName+".id = ?");
+        addParameter(id);
     }
 
     protected void handleOutputNames(SortedSet<String> names) {
         if (names != null && !names.isEmpty()) {
-            addCondition("("+tableName+".data->>'outputName') in (" +
-                    names.stream().map(name -> "'" + name + "'").collect(Collectors.joining(",")) +
-                    ")");
+            addCondition("("+tableName+".data->>'outputName') in (" + placeholders(names.size()) + ")");
+            names.forEach(this::addParameter);
         }
     }
 
@@ -65,9 +65,8 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
 
     protected void handleFullTextFilter(FullTextFilter fullTextFilter) {
         if (fullTextFilter != null) {
-            addCondition( "(" + tableName + ".data->'recordSchema'->>'description') ~* '(" +
-                    fullTextFilter.getKeywords().stream().collect(Collectors.joining("|")) +
-                    ")'");
+            addCondition( "(" + tableName + ".data->'recordSchema'->>'description') ~* ?");
+            addParameter("(" + fullTextFilter.getKeywords().stream().collect(Collectors.joining("|")) + ")");
         }
     }
 
@@ -103,11 +102,11 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
 
                 for (String uid : uniqueIds) {
                     String operator = "=";
-                    String currentId = escapeSqlString(uid);
+                    String currentId = uid;
 
                     if (uid.contains("*")) {
                         operator = "ILIKE";
-                        currentId = escapeSqlString(uid.replace("*", "%"));
+                        currentId = uid.replace("*", "%");
                     }
 
                     if (i > 0) {
@@ -116,7 +115,8 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
 
                     // Direct match on datastream's system
                     sb.append("(").append(tableName).append(".data->'system@id'->>'uniqueID' ")
-                            .append(operator).append(" '").append(currentId).append("'");
+                            .append(operator).append(" ?");
+                    addParameter(currentId);
 
                     if (systemFilter.includeMembers()) {
                         sb.append(" OR EXISTS (SELECT 1 FROM ")
@@ -124,7 +124,8 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
                                 .append(tableName).append(".data->'system@id'->>'uniqueID'")
                                 .append(" AND s.parentid IN (SELECT id FROM ")
                                 .append(sysDescTableName).append(" WHERE data->>'uniqueId' ")
-                                .append(operator).append(" '").append(currentId).append("'))");
+                                .append(operator).append(" ?))");
+                        addParameter(currentId);
                     }
 
                     sb.append(")");
@@ -137,10 +138,6 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
 
                 // handle internal IDS
                 if (systemFilter.getInternalIDs() != null && !systemFilter.getInternalIDs().isEmpty()) {
-                    String joinedIds = systemFilter.getInternalIDs().stream()
-                            .map(bigId -> String.valueOf(bigId.getIdAsLong()))
-                            .collect(Collectors.joining(","));
-
                     StringBuilder sb = new StringBuilder("(");
 
                     if (systemFilter.includeMembers()) {
@@ -148,12 +145,15 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
                         addJoin(sysDescTableName + " s ON (" + tableName +
                                 ".data->'system@id'->'internalID'->>'id')::bigint = s.id");
 
-                        sb.append("s.id IN (").append(joinedIds).append(")")
-                                .append(" OR s.parentid IN (").append(joinedIds).append(")");
+                        sb.append("s.id IN (").append(placeholders(systemFilter.getInternalIDs().size())).append(")")
+                                .append(" OR s.parentid IN (").append(placeholders(systemFilter.getInternalIDs().size())).append(")");
+                        systemFilter.getInternalIDs().forEach(bigId -> addParameter(bigId.getIdAsLong()));
+                        systemFilter.getInternalIDs().forEach(bigId -> addParameter(bigId.getIdAsLong()));
                     } else {
                         sb.append("(").append(tableName)
                                 .append(".data->'system@id'->'internalID'->>'id')::bigint IN (")
-                                .append(joinedIds).append(")");
+                                .append(placeholders(systemFilter.getInternalIDs().size())).append(")");
+                        systemFilter.getInternalIDs().forEach(bigId -> addParameter(bigId.getIdAsLong()));
                     }
 
                     sb.append(")");
@@ -167,13 +167,6 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
                 throw new UnsupportedOperationException();
             }
         }
-    }
-
-    private String escapeSqlString(String value) {
-        if (value == null) {
-            return "";
-        }
-        return value.replace("'", "''");
     }
 
     protected void handleObsFilter(ObsFilter obsFilter) {
@@ -190,19 +183,22 @@ public abstract class DataStreamFilterQuery<F extends FilterQueryGenerator> exte
         StringBuilder sb = new StringBuilder();
         sb.append("jsonb_path_exists(")
                 .append(tableName)
-                .append(".data->'recordSchema', '$.** ? (");
+                .append(".data->'recordSchema', ?::jsonpath)");
+
+        StringBuilder jsonPath = new StringBuilder("$.** ? (");
 
         boolean first = true;
         for (String property : properties) {
             if (!first) {
-                sb.append(" || ");
+                jsonPath.append(" || ");
             }
-            sb.append("@.definition == \"").append(escapeJsonString(property)).append("\"");
+            jsonPath.append("@.definition == \"").append(escapeJsonString(property)).append("\"");
             first = false;
         }
 
-        sb.append(")')");
+        jsonPath.append(")");
         addCondition(sb.toString());
+        addParameter(jsonPath.toString());
     }
 
     private String escapeJsonString(String value) {

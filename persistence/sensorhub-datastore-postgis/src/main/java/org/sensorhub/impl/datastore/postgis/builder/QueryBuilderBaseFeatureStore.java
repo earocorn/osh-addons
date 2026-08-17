@@ -86,19 +86,27 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
     }
 
     public String selectLastVersionByUidQuery(String uid, String timestamp) {
+        return selectLastVersionByUidQuery() ;
+    }
+
+    public String selectLastVersionByUidQuery() {
         return "SELECT DISTINCT ON (id) id,validTime,parentid " +
-                "FROM " + this.getStoreTableName() + " WHERE (data->'properties'->>'uid') = '" + uid +"'" +
+                "FROM " + this.getStoreTableName() + " WHERE (data->'properties'->>'uid') = ? " +
                 "AND validTime " +
                 PostgisUtils.getOperator(RangeFilter.RangeOp.CONTAINS) +
-                " CURRENT_TIMESTAMP::timestamp order by id, lower(validTime) DESC";
+                " ?::timestamp order by id, lower(validTime) DESC";
     }
 
     public String selectLastVersionByIdQuery(long id, String timestamp) {
+        return selectLastVersionByIdQuery();
+    }
+
+    public String selectLastVersionByIdQuery() {
         return "SELECT id,validTime,parentid "+
-                "FROM "+this.getStoreTableName()+" WHERE id = "+id+" AND " +
+                "FROM "+this.getStoreTableName()+" WHERE id = ? AND " +
                 this.getStoreTableName()+".validTime " +
                 PostgisUtils.getOperator(RangeFilter.RangeOp.CONTAINS) +
-                " '" + timestamp + "'::timestamp "+
+                " ?::timestamp "+
                 "order by lower(validTime) ASC";
     }
 
@@ -140,6 +148,10 @@ public abstract class QueryBuilderBaseFeatureStore<V extends IFeature,VF extends
 
     public abstract String createSelectEntriesQuery(F filter, Set<VF> fields);
 
+    public abstract ParameterizedQuery createParameterizedSelectEntriesQuery(F filter, Set<VF> fields);
+
     public abstract String createRemoveEntriesQuery(F filter);
+
+    public abstract ParameterizedQuery createParameterizedRemoveEntriesQuery(F filter);
 
 }

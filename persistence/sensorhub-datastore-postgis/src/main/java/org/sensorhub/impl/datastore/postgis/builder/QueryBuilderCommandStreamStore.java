@@ -72,12 +72,16 @@ public class QueryBuilderCommandStreamStore extends QueryBuilder {
     }
 
     public String createSelectEntriesQuery(CommandStreamFilter filter, Set<ICommandStreamStore.CommandStreamInfoField> fields) {
+        return createParameterizedSelectEntriesQuery(filter, fields).sql();
+    }
+
+    public ParameterizedQuery createParameterizedSelectEntriesQuery(CommandStreamFilter filter, Set<ICommandStreamStore.CommandStreamInfoField> fields) {
         SelectEntriesCommandStreamQuery selectEntriesCommandStreamQuery = new SelectEntriesCommandStreamQuery.Builder()
                 .tableName(this.getStoreTableName())
                 .linkTo(this.systemStore)
                 .withFields(fields)
                 .withCommandStreamFilter(filter)
                 .build();
-        return selectEntriesCommandStreamQuery.toQuery();
+        return selectEntriesCommandStreamQuery.toParameterizedQuery();
     }
 }

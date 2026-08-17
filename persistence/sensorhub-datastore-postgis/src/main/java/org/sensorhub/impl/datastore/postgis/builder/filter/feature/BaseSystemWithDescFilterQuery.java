@@ -62,7 +62,8 @@ public abstract class BaseSystemWithDescFilterQuery<F extends FilterQueryGenerat
             for(String uid: uniqueIds) {
                 // ILIKE use % OPERATOR
                 currentId = uid.replaceAll("\\*","%");
-                sb.append("(").append(tableName).append(".data->>'uniqueId') ILIKE '%").append(currentId).append("'");
+                sb.append("(").append(tableName).append(".data->>'uniqueId') ILIKE ?");
+                addParameter("%" + currentId);
                 if(++i < uniqueIds.size()) {
                     sb.append(" OR ");
                 }

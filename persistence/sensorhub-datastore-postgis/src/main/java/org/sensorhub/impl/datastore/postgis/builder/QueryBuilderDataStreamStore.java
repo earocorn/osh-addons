@@ -99,8 +99,12 @@ public class QueryBuilderDataStreamStore extends QueryBuilder {
     }
 
     public String getAllDataStreams(Instant min, Instant max) {
+        return getAllDataStreams();
+    }
+
+    public String getAllDataStreams() {
         return "SELECT id FROM "+this.getStoreTableName()+" WHERE tsrange((data->'validTime'->>'begin')::timestamp," +
-                "(data->'validTime'->>'end')::timestamp) <@ '["+ PostgisUtils.checkAndGetValidInstant(min)+","+PostgisUtils.checkAndGetValidInstant(max)+"]'::tsrange";
+                "(data->'validTime'->>'end')::timestamp) <@ ?::tsrange";
     }
 
     public String createMinMaxTimeTriggerQuery() {
@@ -129,13 +133,17 @@ public class QueryBuilderDataStreamStore extends QueryBuilder {
     }
 
     public String createSelectEntriesQuery(DataStreamFilter filter, Set<IDataStreamStore.DataStreamInfoField> fields) {
+        return createParameterizedSelectEntriesQuery(filter, fields).sql();
+    }
+
+    public ParameterizedQuery createParameterizedSelectEntriesQuery(DataStreamFilter filter, Set<IDataStreamStore.DataStreamInfoField> fields) {
         SelectEntriesDataStreamQuery selectEntriesDataStreamQuery = new SelectEntriesDataStreamQuery.Builder()
                 .tableName(this.getStoreTableName())
                 .linkTo(this.systemStore)
                 .withFields(fields)
                 .withDataStreamFilter(filter)
                 .build();
-        return selectEntriesDataStreamQuery.toQuery();
+        return selectEntriesDataStreamQuery.toParameterizedQuery();
     }
 
 }

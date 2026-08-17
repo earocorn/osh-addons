@@ -17,8 +17,8 @@ package org.sensorhub.impl.datastore.postgis.builder.filter.stats;
 import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.obs.DataStreamFilter;
 import org.sensorhub.impl.datastore.postgis.builder.filter.datastream.SelectDataStreamFilterQuery;
-import org.sensorhub.impl.datastore.postgis.builder.generator.FilterQueryGenerator;
 import org.sensorhub.impl.datastore.postgis.builder.generator.SelectFilterStatsQueryGenerator;
+import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.vast.util.Asserts;
 
 public class SelectObsStatsFilterQuery extends BaseObsStatsFilterQuery<SelectFilterStatsQueryGenerator> {
@@ -60,8 +60,12 @@ public class SelectObsStatsFilterQuery extends BaseObsStatsFilterQuery<SelectFil
                 filterQueryGenerator.addOrderBy(this.tableName + ".datastreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
             } else {
+                String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
+                String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
                 addCondition(
-                        "tsrange('" + temporalFilter.getMin() + "','" + temporalFilter.getMax() + "', '[]') @> " + this.tableName + ".phenomenonTime");
+                        "tsrange(?::timestamp, ?::timestamp, '[]') @> " + this.tableName + ".phenomenonTime");
+                addParameter(min);
+                addParameter(max);
             }
         }
     }
@@ -73,8 +77,12 @@ public class SelectObsStatsFilterQuery extends BaseObsStatsFilterQuery<SelectFil
                 filterQueryGenerator.addOrderBy(this.tableName + ".datastreamid");
                 filterQueryGenerator.addOrderBy(this.tableName + ".phenomenonTime DESC ");
             } else {
+                String min = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMin());
+                String max = PostgisUtils.checkAndGetValidInstant(temporalFilter.getMax());
                 addCondition(
-                        "tsrange('" + temporalFilter.getMin() + "','" + temporalFilter.getMax() + "', '[]') @> " + this.tableName + ".resultTime");
+                        "tsrange(?::timestamp, ?::timestamp, '[]') @> " + this.tableName + ".resultTime");
+                addParameter(min);
+                addParameter(max);
             }
         }
     }

@@ -61,9 +61,10 @@ public class SelectDataStreamFilterQuery extends DataStreamFilterQuery<SelectFil
                         tableName + ".data->'validTime'->>'begin')::timestamp, (" +
                         tableName + ".data->'validTime'->>'end')::timestamp) " +
                         PostgisUtils.getOperator(temporalFilter) + " " +
-                        "'[" + min + "," + max + "]'::tsrange" +
+                        "?::tsrange" +
                         ")";
                 addCondition(sb);
+                addParameter("[" + min + "," + max + "]");
             }
         }
     }

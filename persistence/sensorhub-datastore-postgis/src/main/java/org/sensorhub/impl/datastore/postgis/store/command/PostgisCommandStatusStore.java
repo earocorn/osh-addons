@@ -19,15 +19,13 @@ import org.sensorhub.api.command.*;
 import org.sensorhub.api.common.BigId;
 import org.sensorhub.api.common.BigIdLong;
 import org.sensorhub.api.datastore.DataStoreException;
-import org.sensorhub.api.datastore.TemporalFilter;
 import org.sensorhub.api.datastore.command.*;
-import org.sensorhub.api.datastore.feature.FeatureKey;
 import org.sensorhub.api.datastore.system.ISystemDescStore;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
+import org.sensorhub.impl.datastore.postgis.builder.ParameterizedQuery;
 import org.sensorhub.impl.datastore.postgis.store.PostgisStore;
 import org.sensorhub.impl.datastore.postgis.builder.IteratorResultSet;
 import org.sensorhub.impl.datastore.postgis.builder.QueryBuilderCommandStatusStore;
-import org.sensorhub.impl.datastore.postgis.store.feature.PostgisFeatureKey;
 import org.sensorhub.impl.datastore.postgis.utils.PostgisUtils;
 import org.sensorhub.impl.datastore.postgis.utils.SerializerUtils;
 import org.slf4j.Logger;
@@ -37,14 +35,12 @@ import org.vast.util.TimeExtent;
 import java.io.IOException;
 import java.sql.*;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static org.sensorhub.api.datastore.command.ICommandStatusStore.CommandStatusField.*;
-import static org.sensorhub.api.datastore.obs.IObsStore.ObsField.FOI_ID;
 
 
 public class PostgisCommandStatusStore extends PostgisStore<QueryBuilderCommandStatusStore> implements ICommandStatusStore {
@@ -82,13 +78,13 @@ public class PostgisCommandStatusStore extends PostgisStore<QueryBuilderCommandS
             hashSet = null;
         }
 
-        String queryStr = queryBuilder.createSelectEntriesQuery(filter, hashSet);
+        ParameterizedQuery query = queryBuilder.createParameterizedSelectEntriesQuery(filter, hashSet);
         if(logger.isDebugEnabled()) {
-            logger.debug(queryStr);
+            logger.debug(query.sql());
         }
         IteratorResultSet<Entry<BigId, ICommandStatus>> iteratorResultSet =
                 new IteratorResultSet<>(
-                        queryStr,
+                        query,
                         connectionManager,
                         filter.getLimit(),
                         (resultSet) -> resultSetToEntry(resultSet, fields),

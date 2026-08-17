@@ -58,8 +58,9 @@ public abstract class BaseFeatureFilterQuery<V extends IFeature,F extends Featur
             return;
 
         var timeRange = PostgisUtils.getRangeFromTemporal(temporalFilter);
-        String sb = " '[" + timeRange[0] + "," + timeRange[1] + "]' " + rangeOpStr + " " + this.tableName + ".validTime ";
+        String sb = " ?::tsrange " + rangeOpStr + " " + this.tableName + ".validTime ";
         addCondition(sb);
+        addParameter("[" + timeRange[0] + "," + timeRange[1] + "]");
     }
 
     protected abstract void handleParentFilter(FeatureFilter parentFilter);
@@ -69,10 +70,9 @@ public abstract class BaseFeatureFilterQuery<V extends IFeature,F extends Featur
             // can use directly ~* for fast lookup
             // https://www.postgresql.org/docs/current/pgtrgm.html
             if(fullTextFilter.getKeywords() != null) {
-                String sb = "(" + tableName + ".data->'properties'->>'description') ~* '(" +
-                        fullTextFilter.getKeywords().stream().collect(Collectors.joining("|")) +
-                        ")'";
+                String sb = "(" + tableName + ".data->'properties'->>'description') ~* ?";
                 addCondition(sb);
+                addParameter("(" + fullTextFilter.getKeywords().stream().collect(Collectors.joining("|")) + ")");
             }
         }
     }
@@ -83,8 +83,9 @@ public abstract class BaseFeatureFilterQuery<V extends IFeature,F extends Featur
             Geometry geometry = spatialFilter.getRoi();
 
             byte[] geomAsBinary = threadLocalWriter.get().write(geometry);
-            sb.append("ST_Intersects(").append(tableName).append(".geometry,'").append(encodeHexString(geomAsBinary)).append("')");
+            sb.append("ST_Intersects(").append(tableName).append(".geometry, ST_GeomFromWKB(?::bytea))");
             addCondition(sb.toString());
+            addParameter("\\x" + encodeHexString(geomAsBinary));
         }
     }
 
@@ -104,7 +105,8 @@ public abstract class BaseFeatureFilterQuery<V extends IFeature,F extends Featur
                     currentId = uid.replaceAll("\\*","%");
                 }
 
-                sb.append("(").append(tableName).append(".data->'properties'->>'uid') "+operator+" '").append(currentId).append("'");
+                sb.append("(").append(tableName).append(".data->'properties'->>'uid') ").append(operator).append(" ?");
+                addParameter(currentId);
                 if(++i < uniqueIds.size()) {
                     sb.append(" OR ");
                 }

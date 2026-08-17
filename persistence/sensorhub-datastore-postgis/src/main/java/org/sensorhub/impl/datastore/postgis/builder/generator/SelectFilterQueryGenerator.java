@@ -14,6 +14,8 @@
 
 package org.sensorhub.impl.datastore.postgis.builder.generator;
 
+import org.sensorhub.impl.datastore.postgis.builder.ParameterizedQuery;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -121,6 +123,10 @@ public class SelectFilterQueryGenerator extends FilterQueryGenerator {
         }
 
         return sb.toString();
+    }
+
+    public ParameterizedQuery toParameterizedCountQuery() {
+        return new ParameterizedQuery(toCountQuery(), getParameters());
     }
 
 

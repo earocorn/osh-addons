@@ -28,7 +28,7 @@ public class PostgisFeatureDatabase extends AbstractModule<PostgisFeatureDatabas
         try {
             String url = config.url;
             String login = config.login;
-            String password = config.password;
+            String password = config.resolvePassword();
             String dbName = config.dbName;
             IdProviderType idProviderType = config.idProviderType;
 

@@ -19,6 +19,11 @@ import org.sensorhub.api.database.DatabaseConfig;
 import org.sensorhub.impl.datastore.postgis.IdProviderType;
 
 import javax.validation.constraints.Min;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 
 /**
@@ -44,6 +49,9 @@ public abstract class PostgisDatabaseConfig extends DatabaseConfig
     @DisplayInfo.FieldType(DisplayInfo.FieldType.Type.PASSWORD)
     public String password;
 
+    @DisplayInfo(label = "Password File", desc = "Path to a UTF-8 file whose first line contains the database password. Takes precedence over Password.")
+    public String passwordFile;
+
     @DisplayInfo(label = "ID Generator", desc = "Method used to generate new resource IDs")
     public IdProviderType idProviderType = IdProviderType.SEQUENTIAL;
 
@@ -57,6 +65,30 @@ public abstract class PostgisDatabaseConfig extends DatabaseConfig
     public PostgisDatabaseConfig()
     {
         this.moduleClass = PostgisObsSystemDatabase.class.getCanonicalName();
+    }
+
+    /**
+     * Resolves the database password without requiring it to be stored in the
+     * persisted module configuration. Secret-file based deployments should set
+     * {@link #passwordFile} and leave {@link #password} empty.
+     */
+    public String resolvePassword() throws IOException
+    {
+        if (passwordFile != null && !passwordFile.isBlank())
+        {
+            try (BufferedReader reader = Files.newBufferedReader(Path.of(passwordFile), StandardCharsets.UTF_8))
+            {
+                String value = reader.readLine();
+                if (value == null || value.isEmpty())
+                    throw new IOException("Database password file is empty: " + passwordFile);
+                return value;
+            }
+        }
+
+        if (password == null || password.isEmpty())
+            throw new IOException("Database password is not configured");
+
+        return password;
     }
 
 }

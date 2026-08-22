@@ -94,6 +94,11 @@ public class FileServer extends AbstractHttpServiceModule<FileServerConfig> {
         super.doStop();
         if (serverHandlers != null && fileServerHandler != null) {
             serverHandlers.removeHandler(fileServerHandler);
+            try {
+                fileServerHandler.stop();
+            } catch (Exception e) {
+                getLogger().warn("Error stopping file server handler", e);
+            }
         }
     }
 
@@ -104,16 +109,16 @@ public class FileServer extends AbstractHttpServiceModule<FileServerConfig> {
             securityHandler.unregister();
     }
 
-    private void addServletSecurity(ConstraintSecurityHandler securityHandler, ConstraintSecurityHandler jettySecurityHandler) {
+    private void addServletSecurity(ConstraintSecurityHandler securityHandler) {
         if (securityHandler != null) {
             Constraint constraint = new Constraint();
             constraint.setRoles(new String[]{Constraint.ANY_AUTH});
             constraint.setAuthenticate(config.securityConfig.requireAuth);
             ConstraintMapping cm = new ConstraintMapping();
             cm.setConstraint(constraint);
-            cm.setPathSpec(config.staticDocsRootUrl);
+            String root = config.staticDocsRootUrl;
+            cm.setPathSpec("/".equals(root) ? "/*" : root.replaceAll("/+$", "") + "/*");
             cm.setMethodOmissions(new String[]{"OPTIONS"}); // disable auth on OPTIONS requests (needed for CORS)
-            jettySecurityHandler.addConstraintMapping(cm);
             securityHandler.addConstraintMapping(cm);
         }
     }
@@ -123,7 +128,7 @@ public class FileServer extends AbstractHttpServiceModule<FileServerConfig> {
         fileSecurityHandler.setAuthenticator(jettySecurityHandler.getAuthenticator());
         fileSecurityHandler.setLoginService(jettySecurityHandler.getLoginService());
         fileSecurityHandler.setHandler(fileResourceContext);
-        addServletSecurity(fileSecurityHandler, jettySecurityHandler);
+        addServletSecurity(fileSecurityHandler);
         return fileSecurityHandler;
     }
 

@@ -113,7 +113,14 @@ public class WebSocketProxyServlet extends HttpServlet
                         }
                         
                         resp.setAcceptedSubProtocol(MQTT_SUB_PROTOCOL);
-                        return new WebSocketProxy(mqttServerAddress, log);
+                        String userID = null;
+                        var principal = req.getUserPrincipal();
+                        if (principal != null)
+                            userID = principal.getName();
+                        else if (req.getHttpServletRequest() != null)
+                            userID = req.getHttpServletRequest().getRemoteUser();
+
+                        return new WebSocketProxy(mqttServerAddress, userID, log);
                     }
                     catch (IOException e)
                     {

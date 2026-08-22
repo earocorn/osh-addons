@@ -53,6 +53,16 @@ public class OshAuthenticator implements SimpleAuthenticator
                 var pwd = authInput.getConnectPacket().getPassword()
                     .map(buf -> StandardCharsets.UTF_8.decode(buf).array())
                     .orElse(new char[0]);
+
+                var proxiedUserID = userID == null ? authInput.getConnectionInformation().getInetAddress()
+                    .map(WebSocketProxyAuth::consume)
+                    .orElse(null) : null;
+                if (proxiedUserID != null && securityMgr.getUserInfo(proxiedUserID) != null)
+                {
+                    authInput.getConnectionInformation().getConnectionAttributeStore().putAsString(MQTT_USER_PROP, proxiedUserID);
+                    authOutput.authenticateSuccessfully();
+                    return;
+                }
                 
                 if (userID != null && securityMgr.isAccessControlEnabled())
                 {

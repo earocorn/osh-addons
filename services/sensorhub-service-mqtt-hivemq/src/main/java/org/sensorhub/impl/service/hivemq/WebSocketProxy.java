@@ -17,6 +17,7 @@ package org.sensorhub.impl.service.hivemq;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.AsynchronousSocketChannel;
@@ -45,6 +46,7 @@ public class WebSocketProxy implements WebSocketListener
 {
     final InetSocketAddress mqttHost;
     final Logger log;
+    final String userID;
     Session session;
     volatile AsynchronousSocketChannel mqttSocket;
     ByteBuffer socketReadBuffer;
@@ -55,9 +57,10 @@ public class WebSocketProxy implements WebSocketListener
     private final AtomicBoolean writeInProgress = new AtomicBoolean(false);
     
     
-    WebSocketProxy(InetSocketAddress mqttHost, Logger logger)
+    WebSocketProxy(InetSocketAddress mqttHost, String userID, Logger logger)
     {
         this.mqttHost = mqttHost;
+        this.userID = userID;
         this.log = logger;
     }
 
@@ -75,6 +78,9 @@ public class WebSocketProxy implements WebSocketListener
             try
             {
                 mqttSocket.connect(mqttHost).get();
+                SocketAddress localAddress = mqttSocket.getLocalAddress();
+                if (localAddress instanceof InetSocketAddress)
+                    WebSocketProxyAuth.register(((InetSocketAddress)localAddress).getAddress(), userID);
             }
             catch (Exception e)
             {

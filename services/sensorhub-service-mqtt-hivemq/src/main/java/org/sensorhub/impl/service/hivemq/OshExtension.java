@@ -178,6 +178,7 @@ public class OshExtension implements ExtensionMain, EmbeddedExtension, IMqttServ
                         var mqttAddress = new InetSocketAddress(InetAddress.getLocalHost(), mqttPort);
                         webSocketProxy = new WebSocketProxyServlet(mqttAddress, log);
                         http.deployServlet(webSocketProxy, endPoint);
+                        http.addServletSecurity(endPoint, service.getConfiguration().requireAuth);
                     }
                     catch (Exception e)
                     {

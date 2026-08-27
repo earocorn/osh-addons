@@ -17,6 +17,7 @@ package org.sensorhub.process.geoloc;
 import net.opengis.swe.v20.DataBlock;
 import org.junit.Test;
 import org.sensorhub.algo.vecmath.Vect3d;
+import org.vast.process.DataQueue;
 import org.vast.process.ProcessException;
 
 import static org.junit.Assert.*;
@@ -107,6 +108,44 @@ public class TestRayIntersectionProcess {
 
         assertNotNull(execProcess(process, south, 0.0, west, 90.0, null, null));
         assertNull(execProcess(process, south, 0.0, west, 0.0, null, null));
+    }
+
+    @Test
+    public void testEmptyIntersectionIsNotPublishedToProcessQueue() throws Exception {
+        RayIntersection process = new RayIntersection();
+        DataQueue outputQueue = new DataQueue();
+        process.connect(process.getOutputList().getComponent("intersection"), outputQueue);
+        process.init();
+
+        Vect3d south = new Vect3d(TARGET_LON, TARGET_LAT - 0.01, 100.0);
+        Vect3d west = new Vect3d(TARGET_LON - 0.01, TARGET_LAT, 200.0);
+        setVector(process, "llaOrigin1", south);
+        setQuantity(process, "azimuth1", 0.0);
+        setVector(process, "llaOrigin2", west);
+        setQuantity(process, "azimuth2", 0.0);
+
+        process.run();
+
+        assertEquals(0, outputQueue.getQueueSize());
+    }
+
+    @Test
+    public void testValidIntersectionIsPublishedToProcessQueue() throws Exception {
+        RayIntersection process = new RayIntersection();
+        DataQueue outputQueue = new DataQueue();
+        process.connect(process.getOutputList().getComponent("intersection"), outputQueue);
+        process.init();
+
+        Vect3d south = new Vect3d(TARGET_LON, TARGET_LAT - 0.01, 100.0);
+        Vect3d west = new Vect3d(TARGET_LON - 0.01, TARGET_LAT, 200.0);
+        setVector(process, "llaOrigin1", south);
+        setQuantity(process, "azimuth1", 0.0);
+        setVector(process, "llaOrigin2", west);
+        setQuantity(process, "azimuth2", 90.0);
+
+        process.run();
+
+        assertEquals(1, outputQueue.getQueueSize());
     }
 
     @Test

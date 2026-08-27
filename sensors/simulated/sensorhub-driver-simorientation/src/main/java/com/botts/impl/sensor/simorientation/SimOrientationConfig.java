@@ -29,6 +29,10 @@ public class SimOrientationConfig extends SensorConfig {
     
     @DisplayInfo(desc="Sensor Location")
     public LLALocation location = new LLALocation();
+
+
+    @DisplayInfo(label="Manual Control", desc="Enable the orientation control stream and output a fixed commanded azimuth")
+    public boolean manualControl = false;
     
     
     public SimOrientationConfig() {

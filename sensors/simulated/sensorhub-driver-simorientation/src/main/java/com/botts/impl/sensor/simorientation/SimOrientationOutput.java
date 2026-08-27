@@ -36,10 +36,9 @@ public class SimOrientationOutput extends AbstractSensorOutput<SimOrientationSen
     Random rand = new Random();
 
     final int MAX_AZIMUTH = 360;
-    final int MIN_AZIMUTH = 0;
     final double SAMPLE_RATE_S = 1.0f;
 
-    double azimuth = 0.0;
+    volatile double azimuth = 0.0;
 
     
     public SimOrientationOutput(SimOrientationSensor parentSensor) {
@@ -71,11 +70,11 @@ public class SimOrientationOutput extends AbstractSensorOutput<SimOrientationSen
     }
 
     
-    private void sendMeasurement() {
+    void sendMeasurement() {
         double time = System.currentTimeMillis() / 1000.;
 
-        // create random azimuth bounded to max
-        azimuth = rand.nextInt(MAX_AZIMUTH);
+        if (!parentSensor.getConfiguration().manualControl)
+            azimuth = rand.nextInt(MAX_AZIMUTH);
 
         DataBlock dataBlock = dataStruct.createDataBlock();
         dataBlock.setDoubleValue(0, time);
@@ -85,6 +84,16 @@ public class SimOrientationOutput extends AbstractSensorOutput<SimOrientationSen
         latestRecord = dataBlock;
         latestRecordTime = System.currentTimeMillis();
         eventHandler.publish(new DataEvent(latestRecordTime, SimOrientationOutput.this, dataBlock));
+    }
+
+
+    void setAzimuth(double azimuth) {
+        this.azimuth = azimuth;
+    }
+
+
+    double getAzimuth() {
+        return azimuth;
     }
 
 

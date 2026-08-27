@@ -116,6 +116,14 @@ public class RayIntersection extends ExecutableProcessImpl {
         }
     }
 
+    @Override
+    protected void publishData() throws InterruptedException {
+        // SensorML process chains use DataQueue, which cannot publish an empty
+        // component. No intersection means no output sample for this execution.
+        if (intersection.hasData())
+            super.publishData();
+    }
+
     /**
      * Computes the forward intersection of two rays.
      *

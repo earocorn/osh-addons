@@ -36,6 +36,9 @@ public class SimOrientationSensor extends AbstractSensorModule<SimOrientationCon
         orientationOutput = new SimOrientationOutput(this);
         addOutput(orientationOutput, false);
 
+        if (config.manualControl)
+            addControlInput(new SimOrientationControl(this));
+
         executorService = Executors.newSingleThreadScheduledExecutor();
     }
 
@@ -90,4 +93,3 @@ public class SimOrientationSensor extends AbstractSensorModule<SimOrientationCon
         return locationUpdateTask.isCancelled();
     }
 }
-

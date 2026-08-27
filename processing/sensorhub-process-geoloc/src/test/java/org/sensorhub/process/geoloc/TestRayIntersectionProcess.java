@@ -18,80 +18,150 @@ import net.opengis.swe.v20.DataBlock;
 import org.junit.Test;
 import org.sensorhub.algo.vecmath.Vect3d;
 import org.vast.process.ProcessException;
-import org.vast.sensorML.SMLUtils;
-import org.vast.sensorML.SimpleProcessImpl;
-import org.vast.xml.XMLWriterException;
 
 import static org.junit.Assert.*;
 
 public class TestRayIntersectionProcess {
 
-    private RayIntersection createProcess() throws ProcessException, XMLWriterException {
-        RayIntersection p = new RayIntersection();
+    private static final double TARGET_LAT = 34.7000;
+    private static final double TARGET_LON = -86.7500;
 
-        SimpleProcessImpl wp = new SimpleProcessImpl();
-        wp.setExecutableImpl(p);
-        new SMLUtils(SMLUtils.V2_0).writeProcess(System.out, wp, true);
-
-        return p;
+    private RayIntersection createProcess() throws ProcessException {
+        RayIntersection process = new RayIntersection();
+        process.init();
+        return process;
     }
 
-    private DataBlock execProcess(RayIntersection p, Vect3d lla1, double az1, Vect3d lla2, double az2) throws ProcessException {
-        var llaOrigin1 = p.getInputList().getComponent("llaOrigin1");
-        var llaData1 = llaOrigin1.createDataBlock();
-        llaOrigin1.setData(llaData1);
-        var azimuth1 = p.getInputList().getComponent("azimuth1");
-        var azData1 = azimuth1.createDataBlock();
-        azimuth1.setData(azData1);
-        var llaOrigin2 = p.getInputList().getComponent("llaOrigin2");
-        var llaData2 = llaOrigin2.createDataBlock();
-        llaOrigin2.setData(llaData2);
-        var azimuth2 = p.getInputList().getComponent("azimuth2");
-        var azData2 = azimuth2.createDataBlock();
-        azimuth2.setData(azData2);
+    private DataBlock execProcess(RayIntersection process,
+            Vect3d lla1, double az1, Vect3d lla2, double az2, Vect3d lla3, Double az3)
+            throws ProcessException {
+        setVector(process, "llaOrigin1", lla1);
+        setQuantity(process, "azimuth1", az1);
+        setVector(process, "llaOrigin2", lla2);
+        setQuantity(process, "azimuth2", az2);
 
-        llaData1.setDoubleValue(0, lla1.y);
-        llaData1.setDoubleValue(1, lla1.x);
-        llaData1.setDoubleValue(2, lla1.z);
-        azData1.setDoubleValue(az1);
+        if (lla3 != null && az3 != null) {
+            setVector(process, "llaOrigin3", lla3);
+            setQuantity(process, "azimuth3", az3);
+        } else {
+            process.getInputList().getComponent("llaOrigin3").clearData();
+            process.getInputList().getComponent("azimuth3").clearData();
+        }
 
-        llaData2.setDoubleValue(0, lla2.y);
-        llaData2.setDoubleValue(1, lla2.x);
-        llaData2.setDoubleValue(2, lla2.z);
-        azData2.setDoubleValue(az2);
-
-        p.execute();
-
-
-        return p.getOutputList().getComponent(0).hasData() ? p.getOutputList().getComponent(0).getData() : null;
+        process.execute();
+        return process.getOutputList().getComponent("intersection").hasData()
+                ? process.getOutputList().getComponent("intersection").getData() : null;
     }
 
+    private void setVector(RayIntersection process, String name, Vect3d lla) {
+        var component = process.getInputList().getComponent(name);
+        var data = component.createDataBlock();
+        data.setDoubleValue(0, lla.y); // latitude
+        data.setDoubleValue(1, lla.x); // longitude
+        data.setDoubleValue(2, lla.z);
+        component.setData(data);
+    }
 
+    private void setQuantity(RayIntersection process, String name, double value) {
+        var component = process.getInputList().getComponent(name);
+        var data = component.createDataBlock();
+        data.setDoubleValue(value);
+        component.setData(data);
+    }
 
     @Test
-    public void testIntersect() throws Exception {
-        RayIntersection p = createProcess();
-        DataBlock intersect;
+    public void testTwoRayProcessReturnsCorrectCoordinateOrderAndAverageAltitude() throws Exception {
+        RayIntersection process = createProcess();
+        Vect3d south = new Vect3d(TARGET_LON, TARGET_LAT - 0.01, 100.0);
+        Vect3d west = new Vect3d(TARGET_LON - 0.01, TARGET_LAT, 200.0);
 
-        double az1 = 0.0;
-        double az2 = 0.0;
-        Vect3d lla1 = new Vect3d(-86.74447699999999, 34.68304916843915, 190);
-        Vect3d lla2 = new Vect3d(-86.78415774416187, 34.73930122239332, 190);
+        DataBlock result = execProcess(process, south, 0.0, west, 90.0, null, null);
 
-        intersect = execProcess(p, lla1, az1, lla2, az2);
-
-        assertNull(intersect);
-
-        az1 = 0.0;
-        az2 = 90.0;
-
-        intersect = execProcess(p, lla1, az1, lla2, az2);
-
-        assertNotNull(intersect);
-        var lat = intersect.getDoubleValue(0);
-        var lon = intersect.getDoubleValue(1);
-        var alt = intersect.getDoubleValue(2);
-        System.out.printf("Lat: %s, Lon: %s, Alt: %s", lat, lon, alt);
+        assertNotNull(result);
+        assertEquals(TARGET_LAT, result.getDoubleValue(0), 1e-9);
+        assertEquals(TARGET_LON, result.getDoubleValue(1), 1e-9);
+        assertEquals(150.0, result.getDoubleValue(2), 1e-9);
     }
 
+    @Test
+    public void testThreeRayLeastSquaresIntersectionWithNoisyHeading() throws Exception {
+        RayIntersection process = createProcess();
+        Vect3d south = new Vect3d(TARGET_LON, TARGET_LAT - 0.01, 100.0);
+        Vect3d west = new Vect3d(TARGET_LON - 0.01, TARGET_LAT, 200.0);
+        Vect3d northeast = new Vect3d(TARGET_LON + 0.007, TARGET_LAT + 0.007, 300.0);
+        double noisyHeading = bearingTo(northeast.y, northeast.x, TARGET_LAT, TARGET_LON) + 0.2;
+
+        DataBlock result = execProcess(process, south, 0.0, west, 90.0, northeast, noisyHeading);
+
+        assertNotNull(result);
+        assertEquals(TARGET_LAT, result.getDoubleValue(0), 2e-5);
+        assertEquals(TARGET_LON, result.getDoubleValue(1), 2e-5);
+        assertEquals(200.0, result.getDoubleValue(2), 1e-9);
+    }
+
+    @Test
+    public void testParallelRaysClearPreviousOutput() throws Exception {
+        RayIntersection process = createProcess();
+        Vect3d south = new Vect3d(TARGET_LON, TARGET_LAT - 0.01, 100.0);
+        Vect3d west = new Vect3d(TARGET_LON - 0.01, TARGET_LAT, 200.0);
+
+        assertNotNull(execProcess(process, south, 0.0, west, 90.0, null, null));
+        assertNull(execProcess(process, south, 0.0, west, 0.0, null, null));
+    }
+
+    @Test
+    public void testIntersectionBehindRayIsRejected() {
+        try {
+            RayIntersection.computeIntersection(
+                    TARGET_LAT - 0.01, TARGET_LON, 180.0,
+                    TARGET_LAT, TARGET_LON - 0.01, 90.0);
+            fail("Expected an intersection behind the first ray to be rejected");
+        } catch (IllegalArgumentException expected) {
+            assertTrue(expected.getMessage().contains("behind ray"));
+        }
+    }
+
+    @Test
+    public void testParallelStaticIntersectionIsRejected() {
+        try {
+            RayIntersection.computeIntersection(
+                    TARGET_LAT - 0.01, TARGET_LON, 0.0,
+                    TARGET_LAT, TARGET_LON - 0.01, 0.0);
+            fail("Expected parallel rays to be rejected");
+        } catch (IllegalArgumentException expected) {
+            assertTrue(expected.getMessage().contains("parallel"));
+        }
+    }
+
+    @Test
+    public void testSmallAreaAcrossAntimeridian() {
+        double[] result = RayIntersection.computeIntersection(
+                -0.01, -179.999, 0.0,
+                0.0, 179.991, 90.0);
+
+        assertEquals(0.0, result[0], 1e-9);
+        assertEquals(-179.999, result[1], 1e-9);
+    }
+
+    @Test
+    public void testThirdRayInputsMustBeProvidedTogether() throws Exception {
+        RayIntersection process = createProcess();
+        Vect3d south = new Vect3d(TARGET_LON, TARGET_LAT - 0.01, 100.0);
+        Vect3d west = new Vect3d(TARGET_LON - 0.01, TARGET_LAT, 200.0);
+        setVector(process, "llaOrigin1", south);
+        setQuantity(process, "azimuth1", 0.0);
+        setVector(process, "llaOrigin2", west);
+        setQuantity(process, "azimuth2", 90.0);
+        setVector(process, "llaOrigin3", new Vect3d(TARGET_LON + 0.01, TARGET_LAT, 300.0));
+
+        process.execute();
+
+        assertFalse(process.getOutputList().getComponent("intersection").hasData());
+    }
+
+    private double bearingTo(double fromLat, double fromLon, double toLat, double toLon) {
+        double north = toLat - fromLat;
+        double east = (toLon - fromLon) * Math.cos(Math.toRadians((fromLat + toLat) / 2.0));
+        return Math.toDegrees(Math.atan2(east, north));
+    }
 }
